@@ -16,17 +16,20 @@ Você precisa ter o Python 3.8 ou superior instalado. Depois, instale as depend�
 
 ## Como usar
 
-Para rodar as detecções em imagens e vídeos salvos:
+Para rodar o sistema completo com um único comando:
 
-    python detectar.py
+    python servidor.py
 
-Para usar a câmera em tempo real:
+Isso abre automaticamente as duas telas no navegador: a interface da câmera com os controles de detecção e a tela do supervisor com os alertas em tempo real. Se a câmera não for a padrão, passe o índice como argumento:
 
-    python camera.py
+    python servidor.py 1
 
-Na janela que abre, o verde indica EPI correto detectado e o vermelho indica ausência de proteção. Pressione Q para fechar.
+Para rodar detecção em imagens ou vídeos salvos sem o servidor:
 
-No Windows, caso a câmera não abra, tente trocar o índice da câmera na linha `cv2.VideoCapture(0)` para `cv2.VideoCapture(1)` dentro do arquivo camera.py.
+    python detectar.py imagem.jpg
+    python detectar.py video.mp4
+
+No Windows, se a câmera não abrir, tente o índice 1 no lugar do 0.
 
 
 ## Estrutura de pastas
