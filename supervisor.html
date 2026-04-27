@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supervisor EPI — i9 Automação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #121212;
+    --surface:      #1A1A1A;
+    --card:         #252525;
+    --border:       #333333;
+    --primary:      #C73C3C;
+    --primary-dark: #A32F2F;
+    --primary-light:#E85555;
+    --green:        #22c55e;
+    --green-bg:     rgba(34,197,94,0.1);
+    --red-bg:       rgba(199,60,60,0.12);
+    --yellow:       #ffd60a;
+    --yellow-bg:    rgba(255,214,10,0.1);
+    --text:         #FFFFFF;
+    --muted:        #A0A0A0;
+    --mono:         'Share Tech Mono', monospace;
+    --sans:         'Barlow', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--primary-dark);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 48px;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--primary);
+    letter-spacing: 0.12em;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ts {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--primary-light);
+    letter-spacing: 0.1em;
+  }
+
+  .btn-voltar {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all .15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-voltar:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* STATUS PRINCIPAL */
+  .status-banner {
+    margin: 24px 24px 0;
+    border-radius: 6px;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid;
+    transition: all .4s;
+    flex-shrink: 0;
+  }
+
+  .status-banner.seguro {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+
+  .status-banner.alerta {
+    background: var(--red-bg);
+    border-color: var(--primary);
+    animation: banner-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes banner-pulse {
+    0%,100% { background: var(--red-bg); }
+    50%      { background: rgba(199,60,60,0.22); }
+  }
+
+  .status-esquerda {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status-icone {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .status-banner.seguro  .status-icone { background: rgba(34,197,94,.15); }
+  .status-banner.alerta  .status-icone { background: rgba(199,60,60,.15); }
+
+  .status-texto { display: flex; flex-direction: column; gap: 4px; }
+
+  .status-titulo {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .status-banner.seguro .status-titulo { color: var(--green); }
+  .status-banner.alerta .status-titulo { color: var(--primary-light); }
+
+  .status-sub {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .status-direita {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* STATS */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 16px 24px;
+    flex-shrink: 0;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .stat-valor {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-card.vermelho .stat-valor { color: var(--primary-light); }
+  .stat-card.verde    .stat-valor { color: var(--green); }
+  .stat-card.amarelo  .stat-valor { color: var(--yellow); }
+  .stat-card.neutro   .stat-valor { color: var(--text); }
+
+  /* FILTROS + LOG */
+  .log-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px 24px;
+    min-height: 0;
+  }
+
+  .log-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .log-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-right: 8px;
+  }
+
+  .filtro-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+
+  .filtro-btn:hover      { border-color: var(--primary); color: var(--text); }
+  .filtro-btn.ativo      { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  .btn-limpar-log {
+    margin-left: auto;
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+
+  .btn-limpar-log:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* LOG LIST */
+  .log-lista {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .log-entry {
+    display: grid;
+    grid-template-columns: 90px 110px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+    background: var(--card);
+    transition: opacity .2s;
+    animation: entrar .25s ease;
+  }
+
+  @keyframes entrar {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .log-entry.alerta  { border-left-color: var(--primary); background: rgba(199,60,60,0.07); }
+  .log-entry.seguro  { border-left-color: var(--green);   background: rgba(34,197,94,.05);  }
+  .log-entry.aviso   { border-left-color: var(--yellow);  background: rgba(255,214,10,.05); }
+
+  .log-entry.oculto  { display: none; }
+
+  .log-hora {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .log-camera {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .log-msg {
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .log-entry.alerta .log-msg { color: var(--primary-light); }
+  .log-entry.seguro .log-msg { color: var(--green); }
+  .log-entry.aviso  .log-msg { color: var(--yellow); }
+
+  .log-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+
+  .log-entry.alerta .log-badge { background: rgba(199,60,60,.2); color: var(--primary-light); }
+  .log-entry.seguro .log-badge { background: rgba(34,197,94,.15); color: var(--green); }
+  .log-entry.aviso  .log-badge { background: rgba(255,214,10,.15); color: var(--yellow); }
+
+  .log-conf {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* vazio */
+  .log-vazio {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <span class="logo">i9 Automação — Supervisor EPI</span>
+  <div class="header-right">
+    <span class="ts" id="ts">--:--:--</span>
+    <span id="ws-status" style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--primary)">SEM CONEXÃO</span>
+    <a href="interface.html" class="btn-voltar">← CÂMERA</a>
+  </div>
+</header>
+
+<!-- STATUS PRINCIPAL -->
+<div class="status-banner seguro" id="banner">
+  <div class="status-esquerda">
+    <div class="status-icone" id="banner-icone">✓</div>
+    <div class="status-texto">
+      <span class="status-titulo" id="banner-titulo">ÁREA SEGURA</span>
+      <span class="status-sub" id="banner-sub">Todos os EPIs identificados — sem infrações ativas</span>
+    </div>
+  </div>
+  <div class="status-direita" id="banner-info">
+    CAM 01<br>
+    ZONA: ATIVA<br>
+    <span id="banner-ts">--:--:--</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat-card vermelho">
+    <span class="stat-label">Alertas hoje</span>
+    <span class="stat-valor" id="stat-alertas">0</span>
+  </div>
+  <div class="stat-card verde">
+    <span class="stat-label">Registros seguros</span>
+    <span class="stat-valor" id="stat-seguros">0</span>
+  </div>
+  <div class="stat-card amarelo">
+    <span class="stat-label">Avisos</span>
+    <span class="stat-valor" id="stat-avisos">0</span>
+  </div>
+  <div class="stat-card neutro">
+    <span class="stat-label">Total eventos</span>
+    <span class="stat-valor" id="stat-total">0</span>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="log-section">
+  <div class="log-toolbar">
+    <span class="log-title">REGISTROS</span>
+    <button class="filtro-btn ativo" onclick="filtrar('todos', this)">TODOS</button>
+    <button class="filtro-btn"       onclick="filtrar('alerta', this)">ALERTAS</button>
+    <button class="filtro-btn"       onclick="filtrar('seguro', this)">SEGUROS</button>
+    <button class="filtro-btn"       onclick="filtrar('aviso', this)">AVISOS</button>
+    <button class="btn-limpar-log"   onclick="limparLog()">LIMPAR</button>
+  </div>
+
+  <div class="log-lista" id="log-lista">
+    <div class="log-vazio" id="log-vazio">Aguardando detecções...</div>
+  </div>
+</div>
+
+<script>
+// ─── relógio ──────────────────────────────────────────────────────────────
+function tick() {
+  const h = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+  document.getElementById('ts').textContent = h;
+  document.getElementById('banner-ts').textContent = h;
+}
+tick(); setInterval(tick, 1000);
+
+// ─── estado ───────────────────────────────────────────────────────────────
+let contadores = { alerta: 0, seguro: 0, aviso: 0 };
+let filtroAtivo = 'todos';
+let ultimoAlerta = null;
+
+// ─── banner ───────────────────────────────────────────────────────────────
+function setBanner(tipo, mensagem, detalhe) {
+  const banner = document.getElementById('banner');
+  const titulo = document.getElementById('banner-titulo');
+  const sub    = document.getElementById('banner-sub');
+  const icone  = document.getElementById('banner-icone');
+
+  banner.className = 'status-banner ' + (tipo === 'alerta' ? 'alerta' : tipo === 'aviso' ? 'alerta' : 'seguro');
+  titulo.textContent = mensagem;
+  sub.textContent    = detalhe;
+  icone.textContent  = tipo === 'alerta' ? '⚠' : tipo === 'aviso' ? '!' : '✓';
+}
+
+// ─── log ─────────────────────────────────────────────────────────────────
+function addLog(tipo, camera, msg, confianca, zona) {
+  const lista = document.getElementById('log-lista');
+  const vazio = document.getElementById('log-vazio');
+  if (vazio) vazio.remove();
+
+  contadores[tipo]++;
+  atualizarStats();
+
+  const agora = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + tipo;
+  entry.dataset.tipo = tipo;
+
+  const badgeTexto = tipo === 'alerta' ? 'ALERTA' : tipo === 'aviso' ? 'AVISO' : 'SEGURO';
+  const zonaTexto  = zona ? `Zona: ${zona}` : '';
+
+  entry.innerHTML = `
+    <span class="log-hora">${agora}</span>
+    <span class="log-camera">${camera}</span>
+    <span class="log-msg">
+      ${msg}
+      <span class="log-badge">${badgeTexto}</span>
+    </span>
+    <span class="log-conf">${confianca ? confianca + '%' : ''}<br><small style="color:var(--muted);font-size:9px">${zonaTexto}</small></span>
+  `;
+
+  if (filtroAtivo !== 'todos' && tipo !== filtroAtivo) {
+    entry.classList.add('oculto');
+  }
+
+  // insere no topo
+  lista.insertBefore(entry, lista.firstChild);
+
+  // atualiza banner
+  if (tipo === 'alerta') {
+    setBanner('alerta', '⚠ INFRAÇÃO DETECTADA', msg + ' — ' + camera);
+    ultimoAlerta = Date.now();
+  } else if (tipo === 'aviso') {
+    setBanner('aviso', '! ATENÇÃO', msg + ' — ' + camera);
+  }
+}
+
+// ─── volta ao seguro depois de 8s sem alertas ────────────────────────────
+setInterval(() => {
+  if (ultimoAlerta && Date.now() - ultimoAlerta > 8000) {
+    setBanner('seguro', 'ÁREA SEGURA', 'Todos os EPIs identificados — sem infrações ativas');
+    ultimoAlerta = null;
+  }
+}, 2000);
+
+// ─── stats ────────────────────────────────────────────────────────────────
+function atualizarStats() {
+  document.getElementById('stat-alertas').textContent = contadores.alerta;
+  document.getElementById('stat-seguros').textContent = contadores.seguro;
+  document.getElementById('stat-avisos').textContent  = contadores.aviso;
+  document.getElementById('stat-total').textContent   =
+    contadores.alerta + contadores.seguro + contadores.aviso;
+}
+
+// ─── filtro ───────────────────────────────────────────────────────────────
+function filtrar(tipo, btn) {
+  filtroAtivo = tipo;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+
+  document.querySelectorAll('.log-entry').forEach(entry => {
+    entry.classList.toggle('oculto', tipo !== 'todos' && entry.dataset.tipo !== tipo);
+  });
+}
+
+function limparLog() {
+  document.querySelectorAll('.log-entry').forEach(e => e.remove());
+  contadores = { alerta: 0, seguro: 0, aviso: 0 };
+  atualizarStats();
+  ultimoAlerta = null;
+  setBanner('seguro', 'ÁREA SEGURA', 'Todos os EPIs identificados — sem infrações ativas');
+  const lista = document.getElementById('log-lista');
+  const vazio = document.createElement('div');
+  vazio.className = 'log-vazio';
+  vazio.id = 'log-vazio';
+  vazio.textContent = 'Aguardando detecções...';
+  lista.appendChild(vazio);
+}
+
+// ─── WebSocket — conecta ao servidor.py ──────────────────────────────────
+const WS_URL = 'ws://localhost:8765';
+let ws = null;
+let reconectando = false;
+
+function conectarWS() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    reconectando = false;
+    setConexao(true);
+    console.log('[WS] Conectado ao servidor.');
+  };
+
+  ws.onmessage = ({ data }) => {
+    try {
+      const ev = JSON.parse(data);
+      addLog(ev.tipo, ev.camera || 'CAM 01', ev.msg, ev.confianca, ev.zona);
+    } catch (e) {
+      console.warn('[WS] Mensagem inválida:', data);
+    }
+  };
+
+  ws.onclose = () => {
+    setConexao(false);
+    if (!reconectando) {
+      reconectando = true;
+      setTimeout(conectarWS, 3000);   // tenta reconectar a cada 3s
+    }
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function setConexao(ativa) {
+  const el = document.getElementById('ws-status');
+  if (!el) return;
+  el.textContent = ativa ? 'CONECTADO' : 'SEM CONEXÃO';
+  el.style.color  = ativa ? 'var(--green)' : 'var(--primary)';
+}
+
+conectarWS();
+</script>
+</body>
+</html>

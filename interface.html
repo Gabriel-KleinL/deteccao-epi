@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Detecção EPI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:            #121212;
+    --surface:       #1A1A1A;
+    --card:          #252525;
+    --border:        #333333;
+    --primary:       #C73C3C;
+    --primary-dark:  #A32F2F;
+    --primary-light: #E85555;
+    --green:         #22c55e;
+    --red:           #C73C3C;
+    --orange:        #ff8c00;
+    --blue:          #0F35A9;
+    --blue-light:    #1D4ED8;
+    --yellow:        #ffd60a;
+    --text:          #FFFFFF;
+    --muted:         #A0A0A0;
+    --mono:          'Share Tech Mono', monospace;
+    --sans:          'Barlow', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 44px 1fr;
+    grid-template-columns: 1fr 280px;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 2px solid var(--primary-dark);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--primary);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  .status-bar {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .status-bar span  { letter-spacing: 0.08em; }
+  .status-bar .val  { color: var(--primary-light); }
+
+  /* CAMERA */
+  .camera-area {
+    position: relative;
+    background: #000;
+    overflow: hidden;
+  }
+
+  video, #canvas-zona {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  #canvas-zona {
+    z-index: 2;
+  }
+
+  /* mode cursors */
+  #canvas-zona.modo-desenho  { cursor: crosshair; }
+  #canvas-zona.modo-idle     { cursor: default; }
+
+  /* scanlines */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.07) 2px,
+      rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+  }
+
+  /* brackets */
+  .bracket {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-color: var(--primary);
+    border-style: solid;
+    opacity: 0.65;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .bracket.tl { top: 16px;    left: 16px;  border-width: 2px 0 0 2px; }
+  .bracket.tr { top: 16px;    right: 16px; border-width: 2px 2px 0 0; }
+  .bracket.bl { bottom: 16px; left: 16px;  border-width: 0 0 2px 2px; }
+  .bracket.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+  .cam-label {
+    position: absolute;
+    top: 20px; left: 54px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--primary);
+    letter-spacing: 0.15em;
+    opacity: 0.85;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  /* modo desenho badge */
+  .badge-desenho {
+    display: none;
+    position: absolute;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--primary);
+    background: rgba(18,18,18,0.85);
+    border: 1px solid var(--primary);
+    padding: 5px 14px;
+    pointer-events: none;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  .badge-desenho.visivel { display: block; }
+
+  /* cam-off */
+  .cam-off {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #000;
+  }
+
+  .cam-off svg { opacity: 0.2; }
+
+  .cam-off p {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .btn-cam {
+    margin-top: 8px;
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn-cam:hover { background: var(--primary); color: #fff; }
+
+  /* PANEL */
+  .panel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 16px;
+    gap: 18px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ZONA */
+  .zona-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .zona-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .zona-status .indicador {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .zona-status .indicador.ativa {
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary);
+  }
+
+  .zona-status .indicador.desenhando {
+    background: var(--yellow);
+    box-shadow: 0 0 6px var(--yellow);
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+
+  .zona-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .btn-zona {
+    padding: 7px 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+
+  .btn-zona:hover { border-color: var(--primary); color: var(--primary); }
+
+  .btn-zona.ativo {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(199,60,60,0.1);
+  }
+
+  .btn-zona.perigo:hover,
+  .btn-zona.perigo.ativo {
+    border-color: var(--primary);
+    color: var(--primary-light);
+    background: rgba(199,60,60,0.12);
+  }
+
+  /* modo dentro/fora */
+  .modo-zona {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .modo-btn {
+    padding: 6px 0;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .modo-btn:first-child { border-right: 1px solid var(--border); }
+
+  .modo-btn.selecionado {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* TOGGLES */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+
+  .toggle-row:hover   { opacity: 0.85; }
+  .toggle-row.disabled { opacity: 0.3; }
+
+  .toggle-info {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .color-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .toggle-label {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  input[type="checkbox"] { display: none; }
+
+  .switch {
+    width: 34px; height: 18px;
+    background: var(--border);
+    border-radius: 9px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  input[type="checkbox"]:checked + .switch {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  input[type="checkbox"]:checked + .switch::after {
+    transform: translateX(16px);
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <span class="logo">i9 Automação — Sistema EPI</span>
+  <div class="status-bar">
+    <span id="ts" class="val">--:--:--</span>
+    <span>CAM 01</span>
+    <span id="active-count" class="val">0 ATIVOS</span>
+    <span id="zona-header" style="display:none">|</span>
+    <span id="zona-header-txt" class="val" style="display:none"></span>
+    <a href="supervisor.html" style="padding:5px 13px;background:transparent;border:1px solid var(--primary-dark);color:var(--primary);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-decoration:none;border-radius:3px;transition:all .15s" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--primary)'">SUPERVISOR →</a>
+  </div>
+</header>
+
+<div class="camera-area" id="cam-area">
+  <div class="cam-off" id="cam-off">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2">
+      <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+    </svg>
+    <p>CÂMERA INATIVA</p>
+    <button class="btn-cam" id="btn-start">INICIAR CÂMERA</button>
+  </div>
+
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas-zona" class="modo-idle"></canvas>
+
+  <div class="scanlines"></div>
+  <div class="bracket tl"></div>
+  <div class="bracket tr"></div>
+  <div class="bracket bl"></div>
+  <div class="bracket br"></div>
+  <span class="cam-label">LIVE</span>
+  <div class="badge-desenho" id="badge-desenho">
+    CLIQUE PARA MARCAR — DUPLO CLIQUE PARA FECHAR — ESC CANCELA
+  </div>
+</div>
+
+<div class="panel">
+
+  <!-- ZONA -->
+  <div>
+    <div class="section-title">Zona de Detecção</div>
+    <div class="zona-box">
+
+      <div class="zona-status">
+        <div class="indicador" id="zona-indicador"></div>
+        <span id="zona-status-txt">Sem zona definida</span>
+      </div>
+
+      <div class="modo-zona">
+        <button class="modo-btn selecionado" id="btn-dentro" onclick="setModo('dentro')">DENTRO</button>
+        <button class="modo-btn" id="btn-fora" onclick="setModo('fora')">FORA</button>
+      </div>
+
+      <div class="zona-btns">
+        <button class="btn-zona" id="btn-desenhar" onclick="iniciarDesenho()">DESENHAR</button>
+        <button class="btn-zona perigo" id="btn-limpar" onclick="limparZona()">LIMPAR</button>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- EPI PRESENTE -->
+  <div>
+    <div class="section-title">EPI Presente</div>
+
+    <label class="toggle-row" style="--accent: var(--green)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--green)"></div>
+        <span class="toggle-label">Capacete</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--green)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--green)"></div>
+        <span class="toggle-label">Máscara</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--green)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--green)"></div>
+        <span class="toggle-label">Colete</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--green)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--green)"></div>
+        <span class="toggle-label">Óculos de Proteção</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+  </div>
+
+  <hr>
+
+  <!-- EPI AUSENTE -->
+  <div>
+    <div class="section-title">EPI Ausente</div>
+
+    <label class="toggle-row" style="--accent: var(--red)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--red)"></div>
+        <span class="toggle-label">Sem Capacete</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--red)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--red)"></div>
+        <span class="toggle-label">Sem Máscara</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--red)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--red)"></div>
+        <span class="toggle-label">Sem Colete</span>
+      </div>
+      <input type="checkbox" checked onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+  </div>
+
+  <hr>
+
+  <!-- OUTROS -->
+  <div>
+    <div class="section-title">Outros</div>
+
+    <label class="toggle-row" style="--accent: var(--yellow)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--yellow)"></div>
+        <span class="toggle-label">Pessoa</span>
+      </div>
+      <input type="checkbox" onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--blue-light)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--blue-light)"></div>
+        <span class="toggle-label">Cone de Segurança</span>
+      </div>
+      <input type="checkbox" onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--orange)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--orange)"></div>
+        <span class="toggle-label">Óculos Comum</span>
+      </div>
+      <input type="checkbox" onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--muted)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--muted)"></div>
+        <span class="toggle-label">Maquinário</span>
+      </div>
+      <input type="checkbox" onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+
+    <label class="toggle-row" style="--accent: var(--muted)">
+      <div class="toggle-info">
+        <div class="color-dot" style="background:var(--muted)"></div>
+        <span class="toggle-label">Veículo</span>
+      </div>
+      <input type="checkbox" onchange="atualizar()">
+      <div class="switch"></div>
+    </label>
+  </div>
+
+</div>
+
+<script>
+// ─── relógio ──────────────────────────────────────────────────────────────
+function tick() {
+  document.getElementById('ts').textContent =
+    new Date().toLocaleTimeString('pt-BR', { hour12: false });
+}
+tick(); setInterval(tick, 1000);
+
+// ─── contador toggles ─────────────────────────────────────────────────────
+function atualizar() {
+  const n = document.querySelectorAll('input[type=checkbox]:checked').length;
+  document.getElementById('active-count').textContent =
+    n + ' ATIVO' + (n !== 1 ? 'S' : '');
+}
+atualizar();
+
+// ─── câmera ───────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video  = document.getElementById('video');
+    video.srcObject = stream;
+    document.getElementById('cam-off').style.display = 'none';
+    video.addEventListener('loadedmetadata', sincronizarCanvas);
+  } catch {
+    alert('Permissão de câmera negada ou dispositivo não encontrado.');
+  }
+});
+
+// ─── canvas / zona ────────────────────────────────────────────────────────
+const canvas  = document.getElementById('canvas-zona');
+const ctx     = canvas.getContext('2d');
+const area    = document.getElementById('cam-area');
+
+let pontos    = [];       // pontos confirmados [{x,y}]
+let cursor    = null;     // posição atual do mouse
+let desenhando = false;   // modo de desenho ativo
+let zonaFechada = false;  // polígono fechado
+let modoZona  = 'dentro'; // 'dentro' | 'fora'
+
+const COR_ZONA_FILL    = 'rgba(199,60,60,0.18)';
+const COR_ZONA_STROKE  = '#C73C3C';
+const COR_ZONA_PONTO   = '#E85555';
+const COR_CURSOR_LINE  = 'rgba(199,60,60,0.55)';
+const RAIO_FECHA       = 14; // px para fechar no primeiro ponto
+
+function sincronizarCanvas() {
+  canvas.width  = area.clientWidth;
+  canvas.height = area.clientHeight;
+  renderizar();
+}
+
+new ResizeObserver(sincronizarCanvas).observe(area);
+sincronizarCanvas();
+
+// ─── desenho ──────────────────────────────────────────────────────────────
+function iniciarDesenho() {
+  if (desenhando) { cancelarDesenho(); return; }
+  pontos      = [];
+  zonaFechada = false;
+  desenhando  = true;
+  canvas.classList.replace('modo-idle', 'modo-desenho');
+  document.getElementById('badge-desenho').classList.add('visivel');
+  document.getElementById('btn-desenhar').classList.add('ativo');
+  atualizarStatusZona();
+  renderizar();
+}
+
+function cancelarDesenho() {
+  desenhando = false;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('btn-desenhar').classList.remove('ativo');
+  if (pontos.length < 3) { pontos = []; zonaFechada = false; }
+  atualizarStatusZona();
+  renderizar();
+}
+
+function fecharPoligono() {
+  if (pontos.length < 3) return;
+  zonaFechada = true;
+  desenhando  = false;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('btn-desenhar').classList.remove('ativo');
+  atualizarStatusZona();
+  renderizar();
+}
+
+function limparZona() {
+  pontos      = [];
+  zonaFechada = false;
+  desenhando  = false;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('btn-desenhar').classList.remove('ativo');
+  atualizarStatusZona();
+  renderizar();
+}
+
+function setModo(modo) {
+  modoZona = modo;
+  document.getElementById('btn-dentro').classList.toggle('selecionado', modo === 'dentro');
+  document.getElementById('btn-fora').classList.toggle('selecionado', modo === 'fora');
+  atualizarStatusZona();
+  renderizar();
+}
+
+// ─── eventos do canvas ────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  if (!desenhando) return;
+  const r = canvas.getBoundingClientRect();
+  cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
+  renderizar();
+});
+
+canvas.addEventListener('mouseleave', () => { cursor = null; renderizar(); });
+
+canvas.addEventListener('click', e => {
+  if (!desenhando) return;
+  const r  = canvas.getBoundingClientRect();
+  const pt = { x: e.clientX - r.left, y: e.clientY - r.top };
+
+  // Clicou próximo ao primeiro ponto → fecha
+  if (pontos.length >= 3 && distancia(pt, pontos[0]) < RAIO_FECHA) {
+    fecharPoligono(); return;
+  }
+  pontos.push(pt);
+  renderizar();
+});
+
+canvas.addEventListener('dblclick', e => {
+  if (!desenhando) return;
+  // Remove o último ponto adicionado pelo segundo clique do dblclick
+  if (pontos.length > 0) pontos.pop();
+  fecharPoligono();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && desenhando) cancelarDesenho();
+  if ((e.key === 'Enter' || e.key === 'z') && desenhando && pontos.length >= 3) fecharPoligono();
+});
+
+// ─── renderização ─────────────────────────────────────────────────────────
+function renderizar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (pontos.length === 0) return;
+
+  ctx.save();
+
+  // Polígono fechado
+  if (zonaFechada) {
+    ctx.beginPath();
+    ctx.moveTo(pontos[0].x, pontos[0].y);
+    pontos.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+    ctx.closePath();
+
+    // preenchimento com padrão hachura + cor sólida
+    ctx.fillStyle = COR_ZONA_FILL;
+    ctx.fill();
+
+    // borda animada tracejada
+    ctx.strokeStyle = COR_ZONA_STROKE;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // label no centróide
+    const cx = pontos.reduce((s, p) => s + p.x, 0) / pontos.length;
+    const cy = pontos.reduce((s, p) => s + p.y, 0) / pontos.length;
+    const label = modoZona === 'dentro' ? 'DETECTAR DENTRO' : 'DETECTAR FORA';
+    ctx.font = '11px Share Tech Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(18,18,18,0.7)';
+    ctx.fillRect(cx - tw/2 - 8, cy - 10, tw + 16, 20);
+    ctx.fillStyle = COR_ZONA_STROKE;
+    ctx.fillText(label, cx, cy);
+
+    // vértices
+    pontos.forEach(p => desenharPonto(p, 4, COR_ZONA_PONTO));
+
+  } else {
+    // Em progresso: linhas entre pontos
+    if (pontos.length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(pontos[0].x, pontos[0].y);
+      pontos.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+      ctx.strokeStyle = COR_ZONA_STROKE;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Linha do cursor
+    if (cursor && pontos.length > 0) {
+      const ultimo = pontos[pontos.length - 1];
+      ctx.beginPath();
+      ctx.moveTo(ultimo.x, ultimo.y);
+      ctx.lineTo(cursor.x, cursor.y);
+      ctx.strokeStyle = COR_CURSOR_LINE;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Ponto de fechamento (anel) quando próximo
+    if (cursor && pontos.length >= 3 && distancia(cursor, pontos[0]) < RAIO_FECHA) {
+      ctx.beginPath();
+      ctx.arc(pontos[0].x, pontos[0].y, RAIO_FECHA, 0, Math.PI * 2);
+      ctx.strokeStyle = COR_ZONA_STROKE;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Vértices
+    pontos.forEach((p, i) => desenharPonto(p, i === 0 ? 5 : 3.5, COR_ZONA_PONTO));
+  }
+
+  ctx.restore();
+}
+
+function desenharPonto(p, raio, cor) {
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, raio, 0, Math.PI * 2);
+  ctx.fillStyle = cor;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function distancia(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// ─── status zona ──────────────────────────────────────────────────────────
+function atualizarStatusZona() {
+  const ind = document.getElementById('zona-indicador');
+  const txt = document.getElementById('zona-status-txt');
+  const hdr = document.getElementById('zona-header');
+  const htx = document.getElementById('zona-header-txt');
+
+  ind.className = 'indicador';
+
+  if (desenhando) {
+    ind.classList.add('desenhando');
+    txt.textContent = 'Desenhando — ' + pontos.length + ' ponto(s)';
+    hdr.style.display = '';
+    htx.textContent = 'ZONA: DESENHANDO';
+    htx.style.display = '';
+  } else if (zonaFechada) {
+    ind.classList.add('ativa');
+    txt.textContent = 'Zona ativa — ' + (modoZona === 'dentro' ? 'detectar dentro' : 'detectar fora');
+    hdr.style.display = '';
+    htx.textContent = 'ZONA: ' + (modoZona === 'dentro' ? 'DENTRO' : 'FORA');
+    htx.style.display = '';
+  } else {
+    txt.textContent = 'Sem zona definida';
+    hdr.style.display = 'none';
+    htx.style.display = 'none';
+  }
+}
+
+// ─── atualiza status enquanto desenha ────────────────────────────────────
+canvas.addEventListener('click', () => {
+  if (desenhando) atualizarStatusZona();
+});
+</script>
+</body>
+</html>
