@@ -1,0 +1,16 @@
+path: ../dados/dataset_oculos
+
+train: train/images
+val:   valid/images
+test:  test/images
+
+nc: 2
+names:
+  0: oculos_protecao
+  1: oculos_comum
+
+# Dataset recomendado (baixar via Roboflow):
+# https://universe.roboflow.com/roboflow-universe-projects/construction-site-safety
+# Filtre pelas classes: safety-glasses / goggles
+#
+# Alternativa: buscar no Roboflow Universe por "safety goggles" e exportar em formato YOLOv8
