@@ -25,8 +25,8 @@
     --yellow:        #ffd60a;
     --text:          #FFFFFF;
     --muted:         #A0A0A0;
-    --mono:          'Share Tech Mono', monospace;
-    --sans:          'Barlow', sans-serif;
+    --mono:          'Share Tech Mono', 'Courier New', monospace;
+    --sans:          'Barlow', system-ui, sans-serif;
   }
 
   body {
@@ -105,6 +105,15 @@
     z-index: 2;
   }
 
+  #canvas-boxes {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
   /* mode cursors */
   #canvas-zona.modo-desenho  { cursor: crosshair; }
   #canvas-zona.modo-idle     { cursor: default; }
@@ -113,7 +122,7 @@
   .scanlines {
     position: absolute;
     inset: 0;
-    z-index: 3;
+    z-index: 4;
     background: repeating-linear-gradient(
       0deg,
       transparent,
@@ -131,7 +140,7 @@
     border-color: var(--primary);
     border-style: solid;
     opacity: 0.65;
-    z-index: 4;
+    z-index: 5;
     pointer-events: none;
   }
   .bracket.tl { top: 16px;    left: 16px;  border-width: 2px 0 0 2px; }
@@ -147,7 +156,7 @@
     color: var(--primary);
     letter-spacing: 0.15em;
     opacity: 0.85;
-    z-index: 4;
+    z-index: 6;
     pointer-events: none;
   }
 
@@ -157,7 +166,7 @@
     position: absolute;
     bottom: 20px; left: 50%;
     transform: translateX(-50%);
-    z-index: 5;
+    z-index: 7;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.12em;
@@ -213,6 +222,28 @@
 
   .btn-cam:hover { background: var(--primary); color: #fff; }
 
+  /* botão resetar câmera */
+  .btn-reset-cam {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 7;
+    padding: 7px 16px;
+    background: rgba(18,18,18,0.75);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .btn-reset-cam:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-reset-cam.visivel { display: block; }
+
   /* PANEL */
   .panel {
     background: var(--surface);
@@ -238,45 +269,6 @@
   }
 
   /* ZONA */
-  .zona-box {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .zona-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-  }
-
-  .zona-status .indicador {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--border);
-    flex-shrink: 0;
-    transition: background 0.3s, box-shadow 0.3s;
-  }
-
-  .zona-status .indicador.ativa {
-    background: var(--primary);
-    box-shadow: 0 0 6px var(--primary);
-  }
-
-  .zona-status .indicador.desenhando {
-    background: var(--yellow);
-    box-shadow: 0 0 6px var(--yellow);
-    animation: pulse 0.8s ease-in-out infinite;
-  }
-
   .zona-btns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -340,6 +332,160 @@
     background: var(--primary);
     color: #fff;
   }
+
+  /* ZONA ITEM */
+  .zona-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-bottom: 4px;
+  }
+
+  .zona-item-cor {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .zona-item-nome {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zona-item-pts {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .zona-item-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 2px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .zona-item-btn:hover { color: var(--primary); }
+
+  /* ZONE EDITOR */
+  .ze-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 6px;
+  }
+
+  .ze-input {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  .ze-input:focus { border-color: var(--primary); }
+
+  .ze-cores {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .ze-cor {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+
+  .ze-cor:hover   { transform: scale(1.15); }
+  .ze-cor.selecionada { border-color: #fff; }
+
+  .ze-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 2px 0 0;
+  }
+
+  .ze-classe-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ze-classe-info {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .ze-classe-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ze-switch {
+    width: 28px; height: 15px;
+    background: var(--border);
+    border-radius: 8px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .ze-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .ze-classe-row input:checked ~ .ze-switch {
+    background: color-mix(in srgb, var(--ze-accent, #22c55e) 35%, transparent);
+  }
+
+  .ze-classe-row input:checked ~ .ze-switch::after {
+    transform: translateX(13px);
+    background: var(--ze-accent, #22c55e);
+  }
+
+  .ze-classe-row input { display: none; }
 
   /* TOGGLES */
   .toggle-row {
@@ -437,7 +583,9 @@
   </div>
 
   <video id="video" autoplay muted playsinline></video>
+  <img id="stream-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none" alt="">
   <canvas id="canvas-zona" class="modo-idle"></canvas>
+  <canvas id="canvas-boxes"></canvas>
 
   <div class="scanlines"></div>
   <div class="bracket tl"></div>
@@ -445,6 +593,7 @@
   <div class="bracket bl"></div>
   <div class="bracket br"></div>
   <span class="cam-label">LIVE</span>
+  <button class="btn-reset-cam" id="btn-reset-cam">⟳ RESETAR CÂMERA</button>
   <div class="badge-desenho" id="badge-desenho">
     CLIQUE PARA MARCAR — DUPLO CLIQUE PARA FECHAR — ESC CANCELA
   </div>
@@ -452,26 +601,76 @@
 
 <div class="panel">
 
-  <!-- ZONA -->
+  <!-- LIMIAR DE CONFIANÇA -->
   <div>
-    <div class="section-title">Zona de Detecção</div>
-    <div class="zona-box">
+    <div class="section-title">Limiar de Confiança</div>
 
-      <div class="zona-status">
-        <div class="indicador" id="zona-indicador"></div>
-        <span id="zona-status-txt">Sem zona definida</span>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--muted)">Detecção geral</span>
+          <span class="val" style="font-family:var(--mono);font-size:11px" id="val-conf">45%</span>
+        </div>
+        <input type="range" id="slider-conf" min="20" max="90" value="45"
+               style="width:100%;accent-color:var(--primary);cursor:pointer">
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--muted)">Alertas (SEM-EPI)</span>
+          <span class="val" style="font-family:var(--mono);font-size:11px" id="val-conf-alerta">70%</span>
+        </div>
+        <input type="range" id="slider-conf-alerta" min="30" max="95" value="70"
+               style="width:100%;accent-color:var(--primary);cursor:pointer">
+      </div>
+    </div>
+    <hr style="margin-top:12px">
+  </div>
+
+  <!-- ZONAS -->
+  <div>
+    <div class="section-title">Zonas de Detecção</div>
+
+    <div id="lista-zonas"></div>
+
+    <div class="zona-btns" style="margin-top:4px">
+      <button class="btn-zona" onclick="abrirEditor(null)" style="grid-column:1/-1">+ NOVA ZONA</button>
+    </div>
+
+    <!-- Editor de zona -->
+    <div class="ze-box" id="ze-box" style="display:none">
+      <input class="ze-input" id="ze-nome" type="text" placeholder="Nome da zona" maxlength="22">
+
+      <div>
+        <div class="ze-sub">Cor</div>
+        <div class="ze-cores" id="ze-cores"></div>
       </div>
 
-      <div class="modo-zona">
-        <button class="modo-btn selecionado" id="btn-dentro" onclick="setModo('dentro')">DENTRO</button>
-        <button class="modo-btn" id="btn-fora" onclick="setModo('fora')">FORA</button>
+      <div>
+        <div class="ze-sub" style="margin-bottom:5px">Modo</div>
+        <div class="modo-zona">
+          <button class="modo-btn selecionado" id="ze-btn-dentro" onclick="setEditorModo('dentro')">DENTRO</button>
+          <button class="modo-btn" id="ze-btn-fora" onclick="setEditorModo('fora')">FORA</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="ze-sub">Classes desta zona</div>
+        <div id="ze-classes"></div>
       </div>
 
       <div class="zona-btns">
-        <button class="btn-zona" id="btn-desenhar" onclick="iniciarDesenho()">DESENHAR</button>
-        <button class="btn-zona perigo" id="btn-limpar" onclick="limparZona()">LIMPAR</button>
+        <button class="btn-zona" id="ze-btn-desenhar" onclick="zeDesenhar()">DESENHAR</button>
+        <button class="btn-zona perigo" onclick="zeLimpar()">LIMPAR</button>
       </div>
+      <div class="zona-btns">
+        <button class="btn-zona" onclick="zeSalvar()" style="border-color:var(--green);color:var(--green)">SALVAR</button>
+        <button class="btn-zona" onclick="zeCancelar()">CANCELAR</button>
+      </div>
+    </div>
 
+    <div class="zona-btns" style="margin-top:6px">
+      <button class="btn-zona" id="btn-caixas" onclick="toggleCaixas()">CAIXAS DE DETECÇÃO</button>
+      <button class="btn-zona" id="btn-modo-cam" onclick="toggleModoCam()" title="Usar câmera do servidor via MJPEG (útil quando servidor está em outra máquina)">CÂMERA SERVIDOR</button>
     </div>
   </div>
 
@@ -486,7 +685,7 @@
         <div class="color-dot" style="background:var(--green)"></div>
         <span class="toggle-label">Capacete</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="Capacete" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -495,7 +694,7 @@
         <div class="color-dot" style="background:var(--green)"></div>
         <span class="toggle-label">Máscara</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="Mascara" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -504,7 +703,7 @@
         <div class="color-dot" style="background:var(--green)"></div>
         <span class="toggle-label">Colete</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="Colete" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -513,7 +712,7 @@
         <div class="color-dot" style="background:var(--green)"></div>
         <span class="toggle-label">Óculos de Proteção</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="Oculos de Protecao" onchange="atualizar()">
       <div class="switch"></div>
     </label>
   </div>
@@ -529,7 +728,7 @@
         <div class="color-dot" style="background:var(--red)"></div>
         <span class="toggle-label">Sem Capacete</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="SEM-Capacete" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -538,7 +737,7 @@
         <div class="color-dot" style="background:var(--red)"></div>
         <span class="toggle-label">Sem Máscara</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="SEM-Mascara" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -547,7 +746,7 @@
         <div class="color-dot" style="background:var(--red)"></div>
         <span class="toggle-label">Sem Colete</span>
       </div>
-      <input type="checkbox" checked onchange="atualizar()">
+      <input type="checkbox" data-classe="SEM-Colete" onchange="atualizar()">
       <div class="switch"></div>
     </label>
   </div>
@@ -563,7 +762,7 @@
         <div class="color-dot" style="background:var(--yellow)"></div>
         <span class="toggle-label">Pessoa</span>
       </div>
-      <input type="checkbox" onchange="atualizar()">
+      <input type="checkbox" data-classe="Pessoa" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -572,16 +771,16 @@
         <div class="color-dot" style="background:var(--blue-light)"></div>
         <span class="toggle-label">Cone de Segurança</span>
       </div>
-      <input type="checkbox" onchange="atualizar()">
+      <input type="checkbox" data-classe="Cone de Seguranca" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
-    <label class="toggle-row" style="--accent: var(--orange)">
+    <label class="toggle-row" style="--accent: var(--red)">
       <div class="toggle-info">
-        <div class="color-dot" style="background:var(--orange)"></div>
-        <span class="toggle-label">Óculos Comum</span>
+        <div class="color-dot" style="background:var(--red)"></div>
+        <span class="toggle-label">Sem Óculos de Proteção</span>
       </div>
-      <input type="checkbox" onchange="atualizar()">
+      <input type="checkbox" data-classe="SEM-Oculos" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -590,7 +789,7 @@
         <div class="color-dot" style="background:var(--muted)"></div>
         <span class="toggle-label">Maquinário</span>
       </div>
-      <input type="checkbox" onchange="atualizar()">
+      <input type="checkbox" data-classe="Maquinario" onchange="atualizar()">
       <div class="switch"></div>
     </label>
 
@@ -599,7 +798,7 @@
         <div class="color-dot" style="background:var(--muted)"></div>
         <span class="toggle-label">Veículo</span>
       </div>
-      <input type="checkbox" onchange="atualizar()">
+      <input type="checkbox" data-classe="Veiculo" onchange="atualizar()">
       <div class="switch"></div>
     </label>
   </div>
@@ -607,6 +806,13 @@
 </div>
 
 <script>
+let wsCliente     = null;
+let classesAtivas = new Set();
+let caixasAtivas  = false;
+let ultimasCaixas = [];
+let canvasBoxes   = null;
+let ctxBoxes      = null;
+
 // ─── relógio ──────────────────────────────────────────────────────────────
 function tick() {
   document.getElementById('ts').textContent =
@@ -616,42 +822,325 @@ tick(); setInterval(tick, 1000);
 
 // ─── contador toggles ─────────────────────────────────────────────────────
 function atualizar() {
-  const n = document.querySelectorAll('input[type=checkbox]:checked').length;
-  document.getElementById('active-count').textContent =
-    n + ' ATIVO' + (n !== 1 ? 'S' : '');
+  const checks = document.querySelectorAll('input[type=checkbox]');
+  const habilitados = [];
+  checks.forEach(cb => { if (cb.checked && cb.dataset.classe) habilitados.push(cb.dataset.classe); });
+
+  const n = habilitados.length;
+  document.getElementById('active-count').textContent = n + ' ATIVO' + (n !== 1 ? 'S' : '');
+
+  classesAtivas = new Set(habilitados);
+  desenharCaixas(ultimasCaixas);
+
+  if (wsCliente && wsCliente.readyState === WebSocket.OPEN) {
+    wsCliente.send(JSON.stringify({ tipo: 'config', habilitados }));
+  }
 }
 atualizar();
 
 // ─── câmera ───────────────────────────────────────────────────────────────
-document.getElementById('btn-start').addEventListener('click', async () => {
+let streamAtivo = null;
+
+async function iniciarCamera(alertarErro = false) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    streamAtivo  = stream;
     const video  = document.getElementById('video');
     video.srcObject = stream;
     document.getElementById('cam-off').style.display = 'none';
+    document.getElementById('btn-reset-cam').classList.add('visivel');
     video.addEventListener('loadedmetadata', sincronizarCanvas);
   } catch {
-    alert('Permissão de câmera negada ou dispositivo não encontrado.');
+    if (alertarErro) alert('Permissão de câmera negada ou dispositivo não encontrado.');
   }
+}
+
+document.getElementById('btn-start').addEventListener('click', () => iniciarCamera(true));
+
+// inicia câmera automaticamente ao carregar a página
+iniciarCamera();
+
+document.getElementById('btn-reset-cam').addEventListener('click', async () => {
+  if (streamAtivo) {
+    streamAtivo.getTracks().forEach(t => t.stop());
+    streamAtivo = null;
+  }
+  const video = document.getElementById('video');
+  video.srcObject = null;
+  await iniciarCamera();
 });
 
-// ─── canvas / zona ────────────────────────────────────────────────────────
-const canvas  = document.getElementById('canvas-zona');
-const ctx     = canvas.getContext('2d');
-const area    = document.getElementById('cam-area');
+// ─── canvas / zonas ──────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas-zona');
+const ctx    = canvas.getContext('2d');
+const area   = document.getElementById('cam-area');
+const RAIO_FECHA = 14;
 
-let pontos    = [];       // pontos confirmados [{x,y}]
-let cursor    = null;     // posição atual do mouse
-let desenhando = false;   // modo de desenho ativo
-let zonaFechada = false;  // polígono fechado
-let modoZona  = 'dentro'; // 'dentro' | 'fora'
+// estado de zonas salvas
+let zonas = JSON.parse(localStorage.getItem('epi_zonas') || '[]');
 
-const COR_ZONA_FILL    = 'rgba(199,60,60,0.18)';
-const COR_ZONA_STROKE  = '#C73C3C';
-const COR_ZONA_PONTO   = '#E85555';
-const COR_CURSOR_LINE  = 'rgba(199,60,60,0.55)';
-const RAIO_FECHA       = 14; // px para fechar no primeiro ponto
+// estado do editor
+let editId       = null;   // id da zona sendo editada (null = nova)
+let editPontos   = [];
+let editFechada  = false;
+let editModo     = 'dentro';
+let editCor      = '#C73C3C';
+let editClasses  = new Set(['SEM-Capacete','SEM-Mascara','SEM-Colete']);
+let desenhando   = false;
+let cursor       = null;
 
+const CORES_PRESET = [
+  '#C73C3C','#ff8c00','#ffd60a','#22c55e',
+  '#06b6d4','#1D4ED8','#7c3aed','#ec4899',
+];
+
+const CLASSES_EDITOR = [
+  { nome:'SEM-Capacete',      label:'Sem Capacete',      cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'SEM-Mascara',       label:'Sem Máscara',        cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'SEM-Colete',        label:'Sem Colete',         cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'Capacete',          label:'Capacete',           cor:'#22c55e', acc:'var(--green)'      },
+  { nome:'Mascara',           label:'Máscara',            cor:'#22c55e', acc:'var(--green)'      },
+  { nome:'Colete',            label:'Colete',             cor:'#22c55e', acc:'var(--green)'      },
+  { nome:'Oculos de Protecao',label:'Óculos de Proteção', cor:'#22c55e', acc:'var(--green)'      },
+  { nome:'SEM-Oculos',        label:'Sem Óculos de Proteção', cor:'#C73C3C', acc:'var(--red)'    },
+  { nome:'Pessoa',            label:'Pessoa',             cor:'#ffd60a', acc:'var(--yellow)'     },
+  { nome:'Cone de Seguranca', label:'Cone de Segurança',  cor:'#1D4ED8', acc:'var(--blue-light)' },
+  { nome:'Maquinario',        label:'Maquinário',         cor:'#A0A0A0', acc:'var(--muted)'      },
+  { nome:'Veiculo',           label:'Veículo',            cor:'#A0A0A0', acc:'var(--muted)'      },
+];
+
+// ─── inicializa swatches de cor ───────────────────────────────────────────
+(function initSwatches() {
+  const container = document.getElementById('ze-cores');
+  CORES_PRESET.forEach(cor => {
+    const el = document.createElement('div');
+    el.className = 'ze-cor' + (cor === editCor ? ' selecionada' : '');
+    el.style.background = cor;
+    el.dataset.cor = cor;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.ze-cor').forEach(e => e.classList.remove('selecionada'));
+      el.classList.add('selecionada');
+      editCor = cor;
+    });
+    container.appendChild(el);
+  });
+})();
+
+// ─── lista de zonas no painel ─────────────────────────────────────────────
+function renderLista() {
+  const lista = document.getElementById('lista-zonas');
+  lista.innerHTML = '';
+  zonas.forEach(z => {
+    const item = document.createElement('div');
+    item.className = 'zona-item';
+    item.innerHTML = `
+      <div class="zona-item-cor" style="background:${z.cor}"></div>
+      <span class="zona-item-nome">${z.nome}</span>
+      <span class="zona-item-pts">${z.pontos.length}pts</span>
+      <button class="zona-item-btn" onclick="toggleZona('${z.id}')" title="Ativar/desativar"
+              style="color:${z.ativa ? 'var(--green)' : 'var(--muted)'}">●</button>
+      <button class="zona-item-btn" onclick="abrirEditor('${z.id}')" title="Editar">✎</button>
+      <button class="zona-item-btn" onclick="excluirZona('${z.id}')" title="Excluir">✕</button>
+    `;
+    lista.appendChild(item);
+  });
+
+  const hdr = document.getElementById('zona-header');
+  const htx = document.getElementById('zona-header-txt');
+  const n = zonas.filter(z => z.ativa).length;
+  if (n > 0) {
+    hdr.style.display = '';
+    htx.style.display = '';
+    htx.textContent = `${n} ZONA${n > 1 ? 'S' : ''} ATIVA${n > 1 ? 'S' : ''}`;
+  } else {
+    hdr.style.display = 'none';
+    htx.style.display = 'none';
+  }
+}
+
+function toggleZona(id) {
+  const z = zonas.find(z => z.id === id);
+  if (z) { z.ativa = !z.ativa; salvarEEnviar(); }
+}
+
+function excluirZona(id) {
+  zonas = zonas.filter(z => z.id !== id);
+  salvarEEnviar();
+}
+
+function salvarEEnviar() {
+  localStorage.setItem('epi_zonas', JSON.stringify(zonas));
+  renderLista();
+  renderizar();
+  enviarZonas();
+}
+
+// ─── editor de zona ───────────────────────────────────────────────────────
+function abrirEditor(id) {
+  editId = id;
+  const box = document.getElementById('ze-box');
+  box.style.display = '';
+
+  if (id && id !== null) {
+    const z = zonas.find(z => z.id === id);
+    document.getElementById('ze-nome').value = z.nome;
+    editCor      = z.cor;
+    editModo     = z.modo;
+    editPontos   = z.pontos.map(p => canvasCoord(p));
+    editFechada  = z.fechada;
+    editClasses  = new Set(z.classes);
+  } else {
+    document.getElementById('ze-nome').value = '';
+    editCor      = '#C73C3C';
+    editModo     = 'dentro';
+    editPontos   = [];
+    editFechada  = false;
+    editClasses  = new Set(['SEM-Capacete','SEM-Mascara','SEM-Colete']);
+  }
+
+  // atualiza swatches
+  document.querySelectorAll('.ze-cor').forEach(el => {
+    el.classList.toggle('selecionada', el.dataset.cor === editCor);
+  });
+
+  // atualiza modo
+  document.getElementById('ze-btn-dentro').classList.toggle('selecionado', editModo === 'dentro');
+  document.getElementById('ze-btn-fora').classList.toggle('selecionado', editModo === 'fora');
+
+  // renderiza classes
+  const container = document.getElementById('ze-classes');
+  container.innerHTML = '';
+  CLASSES_EDITOR.forEach(c => {
+    const label = document.createElement('label');
+    label.className = 'ze-classe-row';
+    label.style.setProperty('--ze-accent', c.acc);
+    label.innerHTML = `
+      <div class="ze-classe-info">
+        <div class="ze-classe-dot" style="background:${c.cor}"></div>
+        ${c.label}
+      </div>
+      <input type="checkbox" ${editClasses.has(c.nome) ? 'checked' : ''} data-nome="${c.nome}">
+      <div class="ze-switch"></div>
+    `;
+    label.querySelector('input').addEventListener('change', e => {
+      if (e.target.checked) editClasses.add(c.nome);
+      else editClasses.delete(c.nome);
+    });
+    container.appendChild(label);
+  });
+
+  renderizar();
+}
+
+function canvasCoord(normPt) {
+  const vid = document.getElementById('video');
+  const cW  = canvas.width, cH = canvas.height;
+  const vW  = vid.videoWidth || cW, vH = vid.videoHeight || cH;
+  const scale = Math.max(cW / vW, cH / vH);
+  const dW = vW * scale, dH = vH * scale;
+  const offX = (cW - dW) / 2, offY = (cH - dH) / 2;
+  return { x: normPt.x * dW + offX, y: normPt.y * dH + offY };
+}
+
+function normCoord(canvasPt) {
+  const vid = document.getElementById('video');
+  const cW  = canvas.width, cH = canvas.height;
+  const vW  = vid.videoWidth || cW, vH = vid.videoHeight || cH;
+  const scale = Math.max(cW / vW, cH / vH);
+  const dW = vW * scale, dH = vH * scale;
+  const offX = (cW - dW) / 2, offY = (cH - dH) / 2;
+  return {
+    x: parseFloat(((canvasPt.x - offX) / dW).toFixed(4)),
+    y: parseFloat(((canvasPt.y - offY) / dH).toFixed(4)),
+  };
+}
+
+function setEditorModo(modo) {
+  editModo = modo;
+  document.getElementById('ze-btn-dentro').classList.toggle('selecionado', modo === 'dentro');
+  document.getElementById('ze-btn-fora').classList.toggle('selecionado', modo === 'fora');
+}
+
+function zeDesenhar() {
+  if (desenhando) { zeCancelarDesenho(); return; }
+  editPontos  = [];
+  editFechada = false;
+  desenhando  = true;
+  canvas.classList.replace('modo-idle', 'modo-desenho');
+  document.getElementById('badge-desenho').classList.add('visivel');
+  document.getElementById('ze-btn-desenhar').classList.add('ativo');
+  renderizar();
+}
+
+function zeCancelarDesenho() {
+  desenhando = false;
+  cursor     = null;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('ze-btn-desenhar').classList.remove('ativo');
+  renderizar();
+}
+
+function zeFecharPoligono() {
+  if (editPontos.length < 3) return;
+  editFechada = true;
+  desenhando  = false;
+  cursor      = null;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('ze-btn-desenhar').classList.remove('ativo');
+  renderizar();
+}
+
+function zeLimpar() {
+  editPontos  = [];
+  editFechada = false;
+  desenhando  = false;
+  cursor      = null;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  document.getElementById('ze-btn-desenhar').classList.remove('ativo');
+  renderizar();
+}
+
+function zeSalvar() {
+  const nome = document.getElementById('ze-nome').value.trim() || 'Zona ' + (zonas.length + 1);
+  const pontosNorm = editPontos.map(normCoord);
+
+  if (editId && zonas.find(z => z.id === editId)) {
+    const z = zonas.find(z => z.id === editId);
+    Object.assign(z, { nome, cor: editCor, modo: editModo, pontos: pontosNorm,
+                        classes: [...editClasses], fechada: editFechada });
+  } else {
+    zonas.push({
+      id:      'z_' + Date.now(),
+      nome,
+      cor:     editCor,
+      modo:    editModo,
+      pontos:  pontosNorm,
+      classes: [...editClasses],
+      fechada: editFechada,
+      ativa:   true,
+    });
+  }
+
+  document.getElementById('ze-box').style.display = 'none';
+  editId = null; desenhando = false; cursor = null;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  salvarEEnviar();
+}
+
+function zeCancelar() {
+  document.getElementById('ze-box').style.display = 'none';
+  editId = null; desenhando = false; cursor = null;
+  editPontos = []; editFechada = false;
+  canvas.classList.replace('modo-desenho', 'modo-idle');
+  document.getElementById('badge-desenho').classList.remove('visivel');
+  renderizar();
+}
+
+// ─── canvas sincronização ─────────────────────────────────────────────────
 function sincronizarCanvas() {
   canvas.width  = area.clientWidth;
   canvas.height = area.clientHeight;
@@ -661,59 +1150,6 @@ function sincronizarCanvas() {
 new ResizeObserver(sincronizarCanvas).observe(area);
 sincronizarCanvas();
 
-// ─── desenho ──────────────────────────────────────────────────────────────
-function iniciarDesenho() {
-  if (desenhando) { cancelarDesenho(); return; }
-  pontos      = [];
-  zonaFechada = false;
-  desenhando  = true;
-  canvas.classList.replace('modo-idle', 'modo-desenho');
-  document.getElementById('badge-desenho').classList.add('visivel');
-  document.getElementById('btn-desenhar').classList.add('ativo');
-  atualizarStatusZona();
-  renderizar();
-}
-
-function cancelarDesenho() {
-  desenhando = false;
-  canvas.classList.replace('modo-desenho', 'modo-idle');
-  document.getElementById('badge-desenho').classList.remove('visivel');
-  document.getElementById('btn-desenhar').classList.remove('ativo');
-  if (pontos.length < 3) { pontos = []; zonaFechada = false; }
-  atualizarStatusZona();
-  renderizar();
-}
-
-function fecharPoligono() {
-  if (pontos.length < 3) return;
-  zonaFechada = true;
-  desenhando  = false;
-  canvas.classList.replace('modo-desenho', 'modo-idle');
-  document.getElementById('badge-desenho').classList.remove('visivel');
-  document.getElementById('btn-desenhar').classList.remove('ativo');
-  atualizarStatusZona();
-  renderizar();
-}
-
-function limparZona() {
-  pontos      = [];
-  zonaFechada = false;
-  desenhando  = false;
-  canvas.classList.replace('modo-desenho', 'modo-idle');
-  document.getElementById('badge-desenho').classList.remove('visivel');
-  document.getElementById('btn-desenhar').classList.remove('ativo');
-  atualizarStatusZona();
-  renderizar();
-}
-
-function setModo(modo) {
-  modoZona = modo;
-  document.getElementById('btn-dentro').classList.toggle('selecionado', modo === 'dentro');
-  document.getElementById('btn-fora').classList.toggle('selecionado', modo === 'fora');
-  atualizarStatusZona();
-  renderizar();
-}
-
 // ─── eventos do canvas ────────────────────────────────────────────────────
 canvas.addEventListener('mousemove', e => {
   if (!desenhando) return;
@@ -722,114 +1158,116 @@ canvas.addEventListener('mousemove', e => {
   renderizar();
 });
 
-canvas.addEventListener('mouseleave', () => { cursor = null; renderizar(); });
+canvas.addEventListener('mouseleave', () => { if (desenhando) { cursor = null; renderizar(); } });
 
 canvas.addEventListener('click', e => {
   if (!desenhando) return;
   const r  = canvas.getBoundingClientRect();
   const pt = { x: e.clientX - r.left, y: e.clientY - r.top };
-
-  // Clicou próximo ao primeiro ponto → fecha
-  if (pontos.length >= 3 && distancia(pt, pontos[0]) < RAIO_FECHA) {
-    fecharPoligono(); return;
+  if (editPontos.length >= 3 && distancia(pt, editPontos[0]) < RAIO_FECHA) {
+    zeFecharPoligono(); return;
   }
-  pontos.push(pt);
+  editPontos.push(pt);
   renderizar();
 });
 
-canvas.addEventListener('dblclick', e => {
+canvas.addEventListener('dblclick', () => {
   if (!desenhando) return;
-  // Remove o último ponto adicionado pelo segundo clique do dblclick
-  if (pontos.length > 0) pontos.pop();
-  fecharPoligono();
+  if (editPontos.length > 0) editPontos.pop();
+  zeFecharPoligono();
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && desenhando) cancelarDesenho();
-  if ((e.key === 'Enter' || e.key === 'z') && desenhando && pontos.length >= 3) fecharPoligono();
+  if (e.key === 'Escape' && desenhando) zeCancelarDesenho();
+  if ((e.key === 'Enter' || e.key === 'z') && desenhando && editPontos.length >= 3) zeFecharPoligono();
 });
 
 // ─── renderização ─────────────────────────────────────────────────────────
 function renderizar() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (pontos.length === 0) return;
-
   ctx.save();
 
-  // Polígono fechado
-  if (zonaFechada) {
-    ctx.beginPath();
-    ctx.moveTo(pontos[0].x, pontos[0].y);
-    pontos.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
-    ctx.closePath();
+  // desenha todas as zonas salvas
+  zonas.forEach(z => {
+    if (!z.fechada || z.pontos.length < 3) return;
+    const pts = z.pontos.map(p => canvasCoord(p));
+    const alpha = z.ativa ? 1 : 0.35;
+    ctx.globalAlpha = alpha;
+    desenharPoligono(pts, z.cor, z.modo, z.nome);
+  });
 
-    // preenchimento com padrão hachura + cor sólida
-    ctx.fillStyle = COR_ZONA_FILL;
-    ctx.fill();
+  ctx.globalAlpha = 1;
 
-    // borda animada tracejada
-    ctx.strokeStyle = COR_ZONA_STROKE;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // label no centróide
-    const cx = pontos.reduce((s, p) => s + p.x, 0) / pontos.length;
-    const cy = pontos.reduce((s, p) => s + p.y, 0) / pontos.length;
-    const label = modoZona === 'dentro' ? 'DETECTAR DENTRO' : 'DETECTAR FORA';
-    ctx.font = '11px Share Tech Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const tw = ctx.measureText(label).width;
-    ctx.fillStyle = 'rgba(18,18,18,0.7)';
-    ctx.fillRect(cx - tw/2 - 8, cy - 10, tw + 16, 20);
-    ctx.fillStyle = COR_ZONA_STROKE;
-    ctx.fillText(label, cx, cy);
-
-    // vértices
-    pontos.forEach(p => desenharPonto(p, 4, COR_ZONA_PONTO));
-
-  } else {
-    // Em progresso: linhas entre pontos
-    if (pontos.length > 0) {
+  // zona sendo editada
+  if (editId !== null || document.getElementById('ze-box').style.display !== 'none') {
+    if (editFechada && editPontos.length >= 3) {
+      desenharPoligono(editPontos, editCor, editModo, '');
+    } else if (editPontos.length > 0) {
+      // linhas em progresso
       ctx.beginPath();
-      ctx.moveTo(pontos[0].x, pontos[0].y);
-      pontos.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
-      ctx.strokeStyle = COR_ZONA_STROKE;
+      ctx.moveTo(editPontos[0].x, editPontos[0].y);
+      editPontos.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+      ctx.strokeStyle = editCor;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
-    }
 
-    // Linha do cursor
-    if (cursor && pontos.length > 0) {
-      const ultimo = pontos[pontos.length - 1];
-      ctx.beginPath();
-      ctx.moveTo(ultimo.x, ultimo.y);
-      ctx.lineTo(cursor.x, cursor.y);
-      ctx.strokeStyle = COR_CURSOR_LINE;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
+      if (cursor) {
+        const ult = editPontos[editPontos.length - 1];
+        ctx.beginPath();
+        ctx.moveTo(ult.x, ult.y);
+        ctx.lineTo(cursor.x, cursor.y);
+        ctx.strokeStyle = editCor + '88';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
-    // Ponto de fechamento (anel) quando próximo
-    if (cursor && pontos.length >= 3 && distancia(cursor, pontos[0]) < RAIO_FECHA) {
-      ctx.beginPath();
-      ctx.arc(pontos[0].x, pontos[0].y, RAIO_FECHA, 0, Math.PI * 2);
-      ctx.strokeStyle = COR_ZONA_STROKE;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
+      if (cursor && editPontos.length >= 3 && distancia(cursor, editPontos[0]) < RAIO_FECHA) {
+        ctx.beginPath();
+        ctx.arc(editPontos[0].x, editPontos[0].y, RAIO_FECHA, 0, Math.PI * 2);
+        ctx.strokeStyle = editCor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
 
-    // Vértices
-    pontos.forEach((p, i) => desenharPonto(p, i === 0 ? 5 : 3.5, COR_ZONA_PONTO));
+      editPontos.forEach((p, i) => desenharPonto(p, i === 0 ? 5 : 3.5, editCor));
+    }
   }
 
   ctx.restore();
+}
+
+function desenharPoligono(pts, cor, modo, nome) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+  ctx.closePath();
+  ctx.fillStyle = cor + '2e';
+  ctx.fill();
+  ctx.strokeStyle = cor;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (nome) {
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    const label = nome + ' · ' + (modo === 'dentro' ? 'DENTRO' : 'FORA');
+    ctx.font = '10px Share Tech Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(18,18,18,0.75)';
+    ctx.fillRect(cx - tw/2 - 6, cy - 9, tw + 12, 18);
+    ctx.fillStyle = cor;
+    ctx.fillText(label, cx, cy);
+  }
+
+  pts.forEach(p => desenharPonto(p, 3.5, cor));
 }
 
 function desenharPonto(p, raio, cor) {
@@ -846,38 +1284,168 @@ function distancia(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-// ─── status zona ──────────────────────────────────────────────────────────
-function atualizarStatusZona() {
-  const ind = document.getElementById('zona-indicador');
-  const txt = document.getElementById('zona-status-txt');
-  const hdr = document.getElementById('zona-header');
-  const htx = document.getElementById('zona-header-txt');
+// ─── caixas de detecção ───────────────────────────────────────────────────
+canvasBoxes = document.getElementById('canvas-boxes');
+ctxBoxes    = canvasBoxes.getContext('2d');
 
-  ind.className = 'indicador';
+new ResizeObserver(() => {
+  canvasBoxes.width  = area.clientWidth;
+  canvasBoxes.height = area.clientHeight;
+  desenharCaixas(ultimasCaixas);
+}).observe(area);
 
-  if (desenhando) {
-    ind.classList.add('desenhando');
-    txt.textContent = 'Desenhando — ' + pontos.length + ' ponto(s)';
-    hdr.style.display = '';
-    htx.textContent = 'ZONA: DESENHANDO';
-    htx.style.display = '';
-  } else if (zonaFechada) {
-    ind.classList.add('ativa');
-    txt.textContent = 'Zona ativa — ' + (modoZona === 'dentro' ? 'detectar dentro' : 'detectar fora');
-    hdr.style.display = '';
-    htx.textContent = 'ZONA: ' + (modoZona === 'dentro' ? 'DENTRO' : 'FORA');
-    htx.style.display = '';
+function corCaixa(nome) {
+  if (nome.startsWith('SEM-')) return '#C73C3C';
+  if (['Capacete','Mascara','Colete','Oculos de Protecao'].includes(nome)) return '#22c55e';
+  if (nome === 'SEM-Oculos') return '#C73C3C';
+  return '#A0A0A0';
+}
+
+function desenharCaixas(caixas) {
+  if (!ctxBoxes) return;
+  ctxBoxes.clearRect(0, 0, canvasBoxes.width, canvasBoxes.height);
+  if (!caixasAtivas || !caixas.length) return;
+
+  const W = canvasBoxes.width, H = canvasBoxes.height;
+  caixas.filter(c => classesAtivas.has(c.nome)).forEach(({ nome, conf, bbox }) => {
+    const [x1n, y1n, x2n, y2n] = bbox;
+    const x = x1n*W, y = y1n*H, w = (x2n-x1n)*W, h = (y2n-y1n)*H;
+    const cor = corCaixa(nome);
+    ctxBoxes.strokeStyle = cor;
+    ctxBoxes.lineWidth = 2;
+    ctxBoxes.strokeRect(x, y, w, h);
+    const label = `${nome}  ${conf}%`;
+    ctxBoxes.font = '11px Share Tech Mono, monospace';
+    const tw = ctxBoxes.measureText(label).width;
+    const lh = 16, ly = y > lh+2 ? y-lh-2 : y+h+2;
+    ctxBoxes.fillStyle = 'rgba(18,18,18,0.75)';
+    ctxBoxes.fillRect(x, ly, tw+10, lh+2);
+    ctxBoxes.fillStyle = cor;
+    ctxBoxes.fillText(label, x+5, ly+lh-3);
+  });
+}
+
+function toggleCaixas() {
+  caixasAtivas = !caixasAtivas;
+  document.getElementById('btn-caixas').classList.toggle('ativo', caixasAtivas);
+  desenharCaixas(ultimasCaixas);
+}
+
+// ─── Limiar de confiança ──────────────────────────────────────────────────
+(function initLimiar() {
+  const sliderConf      = document.getElementById('slider-conf');
+  const sliderConfAlerta = document.getElementById('slider-conf-alerta');
+  const valConf         = document.getElementById('val-conf');
+  const valConfAlerta   = document.getElementById('val-conf-alerta');
+
+  const savedConf      = localStorage.getItem('epi_conf');
+  const savedConfAlerta = localStorage.getItem('epi_conf_alerta');
+
+  if (savedConf      !== null) { sliderConf.value      = Math.round(savedConf * 100);      valConf.textContent      = Math.round(savedConf * 100)      + '%'; }
+  if (savedConfAlerta !== null) { sliderConfAlerta.value = Math.round(savedConfAlerta * 100); valConfAlerta.textContent = Math.round(savedConfAlerta * 100) + '%'; }
+
+  function enviarLimiar() {
+    if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
+    wsCliente.send(JSON.stringify({
+      tipo:        'confianca',
+      conf:        parseInt(sliderConf.value)      / 100,
+      conf_alerta: parseInt(sliderConfAlerta.value) / 100,
+    }));
+  }
+
+  sliderConf.addEventListener('input', () => {
+    valConf.textContent = sliderConf.value + '%';
+    localStorage.setItem('epi_conf', parseInt(sliderConf.value) / 100);
+    enviarLimiar();
+  });
+
+  sliderConfAlerta.addEventListener('input', () => {
+    valConfAlerta.textContent = sliderConfAlerta.value + '%';
+    localStorage.setItem('epi_conf_alerta', parseInt(sliderConfAlerta.value) / 100);
+    enviarLimiar();
+  });
+
+  window._enviarLimiar = enviarLimiar;
+})();
+
+// ─── WebSocket ────────────────────────────────────────────────────────────
+function enviarZonas() {
+  if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
+  wsCliente.send(JSON.stringify({ tipo: 'zonas', zonas: zonas.filter(z => z.ativa) }));
+}
+
+let _wsPort = 8765;
+
+function conectarWS() {
+  wsCliente = new WebSocket(`ws://${location.hostname}:${_wsPort}`);
+  wsCliente.onopen = () => { atualizar(); enviarZonas(); if (window._enviarLimiar) window._enviarLimiar(); };
+  wsCliente.onmessage = ({ data }) => {
+    try {
+      const ev = JSON.parse(data);
+      if (ev.tipo === 'frame') { ultimasCaixas = ev.caixas || []; desenharCaixas(ultimasCaixas); }
+    } catch {}
+  };
+  wsCliente.onclose = () => setTimeout(conectarWS, 3000);
+  wsCliente.onerror = () => wsCliente.close();
+}
+
+// carrega porta WS do servidor; se remoto, ativa câmera do servidor automaticamente
+fetch('/api/config')
+  .then(r => r.json())
+  .catch(() => ({ ws_port: 8765 }))
+  .then(cfg => {
+    _wsPort = cfg.ws_port || 8765;
+    conectarWS();
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      toggleModoCam();
+    }
+  });
+
+// ─── modo câmera servidor (MJPEG /stream) ────────────────────────────────────
+let modoServidor = false;
+
+function toggleModoCam() {
+  modoServidor = !modoServidor;
+  const video  = document.getElementById('video');
+  const img    = document.getElementById('stream-img');
+  const btn    = document.getElementById('btn-modo-cam');
+  const camOff = document.getElementById('cam-off');
+
+  if (modoServidor) {
+    if (streamAtivo) { streamAtivo.getTracks().forEach(t => t.stop()); streamAtivo = null; }
+    video.srcObject = null;
+    video.style.display = 'none';
+    img.src = '/stream';
+    img.style.display = 'block';
+    camOff.style.display = 'none';
+    btn.classList.add('ativo');
+    btn.textContent = 'CÂMERA LOCAL';
   } else {
-    txt.textContent = 'Sem zona definida';
-    hdr.style.display = 'none';
-    htx.style.display = 'none';
+    img.style.display = 'none';
+    img.src = '';
+    video.style.display = 'block';
+    btn.classList.remove('ativo');
+    btn.textContent = 'CÂMERA SERVIDOR';
+    iniciarCamera();
   }
 }
 
-// ─── atualiza status enquanto desenha ────────────────────────────────────
-canvas.addEventListener('click', () => {
-  if (desenhando) atualizarStatusZona();
+// sincroniza zonas entre abas via localStorage (storage event dispara em outras abas)
+window.addEventListener('storage', e => {
+  if (e.key === 'epi_zonas' && e.newValue) {
+    const novas = JSON.parse(e.newValue);
+    if (JSON.stringify(novas) !== JSON.stringify(zonas)) {
+      zonas = novas;
+      renderLista();
+      renderizar();
+      enviarZonas();
+    }
+  }
 });
+
+// carrega zonas do localStorage e renderiza
+renderLista();
+renderizar();
 </script>
 </body>
 </html>

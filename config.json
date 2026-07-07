@@ -1,0 +1,10 @@
+{
+  "camera": 0,
+  "http_port": 8080,
+  "ws_port": 8765,
+  "confianca": 0.45,
+  "confianca_alerta": 0.70,
+  "intervalo_min": 3.0,
+  "log_manter_dias": 30,
+  "capturas_manter_dias": 7
+}

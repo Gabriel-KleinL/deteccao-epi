@@ -1,16 +1,10 @@
-path: ../dados/dataset_oculos
+path: /Users/gabrielkleinlima/Programando/deteccao-epi/dados/dataset_oculos
 
 train: train/images
-val:   valid/images
+val:   val/images
 test:  test/images
 
 nc: 2
 names:
-  0: oculos_protecao
-  1: oculos_comum
-
-# Dataset recomendado (baixar via Roboflow):
-# https://universe.roboflow.com/roboflow-universe-projects/construction-site-safety
-# Filtre pelas classes: safety-glasses / goggles
-#
-# Alternativa: buscar no Roboflow Universe por "safety goggles" e exportar em formato YOLOv8
+  0: Oculos de Protecao
+  1: SEM-Oculos

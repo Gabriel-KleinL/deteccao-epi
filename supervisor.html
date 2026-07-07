@@ -24,8 +24,8 @@
     --yellow-bg:    rgba(255,214,10,0.1);
     --text:         #FFFFFF;
     --muted:        #A0A0A0;
-    --mono:         'Share Tech Mono', monospace;
-    --sans:         'Barlow', sans-serif;
+    --mono:         'Share Tech Mono', 'Courier New', monospace;
+    --sans:         'Barlow', system-ui, sans-serif;
   }
 
   body {
@@ -176,7 +176,7 @@
   /* STATS */
   .stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
     padding: 16px 24px;
     flex-shrink: 0;
@@ -254,7 +254,6 @@
   .filtro-btn.ativo      { background: var(--primary); border-color: var(--primary); color: #fff; }
 
   .btn-limpar-log {
-    margin-left: auto;
     padding: 4px 12px;
     background: transparent;
     border: 1px solid var(--border);
@@ -267,6 +266,52 @@
   }
 
   .btn-limpar-log:hover { border-color: var(--primary); color: var(--primary); }
+
+  .btn-mute {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all .15s;
+    line-height: 1;
+  }
+
+  .btn-mute:hover { border-color: var(--yellow); color: var(--yellow); }
+  .btn-mute.mudo  { border-color: var(--primary-dark); color: var(--primary); }
+
+  .duracao-group {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .intervalo-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+
+  .btn-intervalo {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all .15s;
+  }
+
+  .btn-intervalo:hover { border-color: var(--yellow); color: var(--text); }
+  .btn-intervalo.ativo { background: #3a3000; border-color: var(--yellow); color: var(--yellow); }
 
   /* LOG LIST */
   .log-lista {
@@ -349,6 +394,57 @@
     text-align: right;
   }
 
+  /* CAPTURAS */
+  .capturas-section {
+    padding: 0 24px 8px;
+    flex-shrink: 0;
+  }
+  .capturas-titulo {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 8px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .capturas-grid {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .captura-item {
+    flex-shrink: 0;
+    width: 120px;
+  }
+  .captura-item img {
+    width: 120px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    display: block;
+    transition: border-color .15s;
+  }
+  .captura-item img:hover { border-color: var(--primary); }
+  .captura-item span {
+    display: block;
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   /* vazio */
   .log-vazio {
     flex: 1;
@@ -369,7 +465,10 @@
   <span class="logo">i9 Automação — Supervisor EPI</span>
   <div class="header-right">
     <span class="ts" id="ts">--:--:--</span>
+    <button class="btn-mute" id="btn-mute" onclick="toggleMute()" title="Silenciar / ativar alertas sonoros">🔔</button>
     <span id="ws-status" style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--primary)">SEM CONEXÃO</span>
+    <span id="cam-status" style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--primary)">CAM OFFLINE</span>
+    <button class="btn-voltar" onclick="limparTudo()" style="border-color:var(--primary-dark);color:var(--primary)">LIMPAR TUDO</button>
     <a href="interface.html" class="btn-voltar">← CÂMERA</a>
   </div>
 </header>
@@ -408,6 +507,19 @@
     <span class="stat-label">Total eventos</span>
     <span class="stat-valor" id="stat-total">0</span>
   </div>
+  <div class="stat-card neutro" style="border-color:#06b6d4">
+    <span class="stat-label" style="color:#06b6d4">Pessoas na área</span>
+    <span class="stat-valor" id="stat-pessoas" style="color:#06b6d4">—</span>
+  </div>
+</div>
+
+<!-- CAPTURAS DE ALERTAS -->
+<div class="capturas-section" id="capturas-section" style="display:none">
+  <div class="capturas-titulo">
+    Capturas de Alertas
+    <span id="capturas-count" style="color:var(--primary-light)"></span>
+  </div>
+  <div class="capturas-grid" id="capturas-grid"></div>
 </div>
 
 <!-- LOG -->
@@ -418,7 +530,14 @@
     <button class="filtro-btn"       onclick="filtrar('alerta', this)">ALERTAS</button>
     <button class="filtro-btn"       onclick="filtrar('seguro', this)">SEGUROS</button>
     <button class="filtro-btn"       onclick="filtrar('aviso', this)">AVISOS</button>
-    <button class="btn-limpar-log"   onclick="limparLog()">LIMPAR</button>
+    <div class="duracao-group">
+      <span class="intervalo-label">INTERVALO</span>
+      <button class="btn-intervalo" id="int-3s"   onclick="setIntervalo(3,  this)">3s</button>
+      <button class="btn-intervalo" id="int-10s"  onclick="setIntervalo(10, this)">10s</button>
+      <button class="btn-intervalo" id="int-1min" onclick="setIntervalo(60, this)">1min</button>
+      <button class="btn-limpar-log" onclick="exportarCSV()">EXPORTAR CSV</button>
+      <button class="btn-limpar-log" onclick="limparLog()">LIMPAR</button>
+    </div>
   </div>
 
   <div class="log-lista" id="log-lista">
@@ -435,10 +554,109 @@ function tick() {
 }
 tick(); setInterval(tick, 1000);
 
+// ─── áudio (Web Audio API — sem arquivo externo) ──────────────────────────
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function beep(freq, durMs) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durMs / 1000);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + durMs / 1000);
+  } catch (e) {
+    console.warn('[Audio] Erro ao tocar beep:', e);
+  }
+}
+
+// ─── mute — persiste em localStorage ─────────────────────────────────────
+let mudo = localStorage.getItem('epi_mudo') === '1';
+
+function atualizarBtnMute() {
+  const btn = document.getElementById('btn-mute');
+  if (!btn) return;
+  if (mudo) {
+    btn.textContent = '🔇';
+    btn.classList.add('mudo');
+    btn.title = 'Som silenciado — clique para ativar';
+  } else {
+    btn.textContent = '🔔';
+    btn.classList.remove('mudo');
+    btn.title = 'Som ativo — clique para silenciar';
+  }
+}
+
+function toggleMute() {
+  mudo = !mudo;
+  localStorage.setItem('epi_mudo', mudo ? '1' : '0');
+  atualizarBtnMute();
+}
+
+atualizarBtnMute();
+
 // ─── estado ───────────────────────────────────────────────────────────────
-let contadores = { alerta: 0, seguro: 0, aviso: 0 };
 let filtroAtivo = 'todos';
 let ultimoAlerta = null;
+let intervaloAtual = parseInt(localStorage.getItem('epi_intervalo') || '3');
+
+// ─── persistência de estatísticas por dia ────────────────────────────────
+function chaveDoDia() {
+  const hoje = new Date();
+  const y = hoje.getFullYear();
+  const m = String(hoje.getMonth() + 1).padStart(2, '0');
+  const d = String(hoje.getDate()).padStart(2, '0');
+  return `epi_stats_${y}-${m}-${d}`;
+}
+
+function salvarStats() {
+  localStorage.setItem(chaveDoDia(), JSON.stringify(contadores));
+}
+
+function carregarStats() {
+  const raw = localStorage.getItem(chaveDoDia());
+  if (raw) {
+    try {
+      const salvo = JSON.parse(raw);
+      return {
+        alerta: salvo.alerta || 0,
+        seguro: salvo.seguro || 0,
+        aviso:  salvo.aviso  || 0
+      };
+    } catch (e) { /* ignora JSON inválido */ }
+  }
+  return { alerta: 0, seguro: 0, aviso: 0 };
+}
+
+let contadores = carregarStats();
+atualizarStats(); // exibe valores restaurados ao carregar
+
+// aplica botão ativo conforme valor salvo
+(function initIntervalo() {
+  const mapa = { 3: 'int-3s', 10: 'int-10s', 60: 'int-1min' };
+  const btn = document.getElementById(mapa[intervaloAtual] || 'int-3s');
+  if (btn) btn.classList.add('ativo');
+})();
+
+function setIntervalo(segundos, btn) {
+  intervaloAtual = segundos;
+  localStorage.setItem('epi_intervalo', segundos);
+  document.querySelectorAll('.btn-intervalo').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ tipo: 'intervalo', segundos }));
+  }
+}
 
 // ─── banner ───────────────────────────────────────────────────────────────
 function setBanner(tipo, mensagem, detalhe) {
@@ -461,12 +679,29 @@ function addLog(tipo, camera, msg, confianca, zona) {
 
   contadores[tipo]++;
   atualizarStats();
+  salvarStats();
+
+  // alerta sonoro
+  if (!mudo) {
+    if (tipo === 'alerta') beep(880, 200);
+    else if (tipo === 'aviso') beep(440, 200);
+  }
+
+  // notificação do browser (só se aba estiver em background)
+  if (tipo === 'alerta') {
+    notificarAlerta(msg + (camera ? ' — ' + camera : ''));
+  }
 
   const agora = new Date().toLocaleTimeString('pt-BR', { hour12: false });
 
   const entry = document.createElement('div');
   entry.className = 'log-entry ' + tipo;
-  entry.dataset.tipo = tipo;
+  entry.dataset.tipo      = tipo;
+  entry.dataset.hora      = agora;
+  entry.dataset.camera    = camera;
+  entry.dataset.msg       = msg;
+  entry.dataset.confianca = confianca || '';
+  entry.dataset.zona      = zona || '';
 
   const badgeTexto = tipo === 'alerta' ? 'ALERTA' : tipo === 'aviso' ? 'AVISO' : 'SEGURO';
   const zonaTexto  = zona ? `Zona: ${zona}` : '';
@@ -529,6 +764,7 @@ function limparLog() {
   document.querySelectorAll('.log-entry').forEach(e => e.remove());
   contadores = { alerta: 0, seguro: 0, aviso: 0 };
   atualizarStats();
+  salvarStats();
   ultimoAlerta = null;
   setBanner('seguro', 'ÁREA SEGURA', 'Todos os EPIs identificados — sem infrações ativas');
   const lista = document.getElementById('log-lista');
@@ -539,8 +775,80 @@ function limparLog() {
   lista.appendChild(vazio);
 }
 
+function limparTudo() {
+  limparLog();
+  filtrar('todos', document.querySelector('.filtro-btn'));
+}
+
+// ─── exportar CSV ─────────────────────────────────────────────────────────
+function exportarCSV() {
+  const entradas = document.querySelectorAll('.log-entry:not(.oculto)');
+  if (!entradas.length) {
+    alert('Nenhum registro visível para exportar.');
+    return;
+  }
+
+  const escapar = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+
+  const linhas = ['Hora,Camera,Mensagem,Tipo,Confianca,Zona'];
+  entradas.forEach(e => {
+    linhas.push([
+      escapar(e.dataset.hora),
+      escapar(e.dataset.camera),
+      escapar(e.dataset.msg),
+      escapar(e.dataset.tipo),
+      escapar(e.dataset.confianca),
+      escapar(e.dataset.zona)
+    ].join(','));
+  });
+
+  const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const hoje = new Date();
+  const ts   = hoje.toISOString().slice(0, 10);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `epi_log_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ─── status da câmera ─────────────────────────────────────────────────────
+let camOfflineTimer = null;
+
+function resetCamTimer() {
+  const el = document.getElementById('cam-status');
+  if (el) {
+    el.textContent = 'CAM ATIVA';
+    el.style.color = 'var(--green)';
+  }
+  clearTimeout(camOfflineTimer);
+  camOfflineTimer = setTimeout(() => {
+    const el = document.getElementById('cam-status');
+    if (el) {
+      el.textContent = 'CAM OFFLINE';
+      el.style.color = 'var(--primary)';
+    }
+  }, 4000);
+}
+
+// ─── notificações do browser ─────────────────────────────────────────────
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+function notificarAlerta(mensagem) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+  const n = new Notification('⚠ Infração EPI — i9 Automação', { body: mensagem });
+  setTimeout(() => n.close(), 4000);
+}
+
 // ─── WebSocket — conecta ao servidor.py ──────────────────────────────────
-const WS_URL = 'ws://localhost:8765';
+let WS_URL = `ws://${location.hostname}:8765`;
 let ws = null;
 let reconectando = false;
 
@@ -550,12 +858,18 @@ function conectarWS() {
   ws.onopen = () => {
     reconectando = false;
     setConexao(true);
-    console.log('[WS] Conectado ao servidor.');
+    resetCamTimer();  // inicia o timeout; câmera pode estar offline mesmo com WS ativo
+    ws.send(JSON.stringify({ tipo: 'intervalo', segundos: intervaloAtual }));
   };
 
   ws.onmessage = ({ data }) => {
     try {
       const ev = JSON.parse(data);
+      if (ev.tipo === 'frame') {
+        document.getElementById('stat-pessoas').textContent = ev.pessoas ?? 0;
+        resetCamTimer();
+        return;
+      }
       addLog(ev.tipo, ev.camera || 'CAM 01', ev.msg, ev.confianca, ev.zona);
     } catch (e) {
       console.warn('[WS] Mensagem inválida:', data);
@@ -580,7 +894,45 @@ function setConexao(ativa) {
   el.style.color  = ativa ? 'var(--green)' : 'var(--primary)';
 }
 
-conectarWS();
+// carrega porta WS do servidor antes de conectar
+fetch('/api/config')
+  .then(r => r.json())
+  .catch(() => ({ ws_port: 8765 }))
+  .then(cfg => {
+    WS_URL = `ws://${location.hostname}:${cfg.ws_port}`;
+    conectarWS();
+  });
+
+// ─── galeria de capturas ──────────────────────────────────────────────────
+async function atualizarCapturas() {
+  try {
+    const res = await fetch('/api/capturas');
+    const nomes = await res.json();
+    const section = document.getElementById('capturas-section');
+    const grid = document.getElementById('capturas-grid');
+    const count = document.getElementById('capturas-count');
+    if (!nomes.length) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    count.textContent = nomes.length + ' captura' + (nomes.length !== 1 ? 's' : '');
+    grid.innerHTML = '';
+    nomes.forEach(nome => {
+      const item = document.createElement('div');
+      item.className = 'captura-item';
+      // formata o nome: "20260706_181523_SEM-Capacete.jpg" → "18:15:23 SEM-Capacete"
+      const partes = nome.replace('.jpg','').split('_');
+      const hora = partes[1] ? partes[1].replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3') : '';
+      const classe = partes.slice(2).join('-');
+      item.innerHTML = `
+        <img src="/resultados/capturas/${nome}" loading="lazy"
+             onerror="this.parentElement.remove()" title="${classe} — ${hora}">
+        <span>${hora} ${classe}</span>
+      `;
+      grid.appendChild(item);
+    });
+  } catch { /* servidor offline */ }
+}
+atualizarCapturas();
+setInterval(atualizarCapturas, 10000); // atualiza a cada 10s
 </script>
 </body>
 </html>

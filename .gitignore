@@ -1,4 +1,13 @@
 __pycache__/
 *.py[cod]
-saidas/deteccao/
 .DS_Store
+
+# datasets e treinos (arquivos grandes)
+dados/dataset_oculos/
+saidas/
+
+# modelos treinados (commitar só manualmente se quiser versionar)
+modelos/oculos.pt
+
+# logs e capturas de produção
+resultados/
