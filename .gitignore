@@ -1,6 +1,11 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+.venv/
+.tmp/
+.pip-cache/
+.matplotlib/
+.ultralytics/
 
 # datasets e treinos (arquivos grandes)
 dados/dataset_oculos/

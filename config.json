@@ -1,7 +1,7 @@
 {
   "camera": 0,
-  "http_port": 8080,
-  "ws_port": 8765,
+  "http_port": 50061,
+  "ws_port": 50062,
   "confianca": 0.45,
   "confianca_alerta": 0.70,
   "intervalo_min": 3.0,

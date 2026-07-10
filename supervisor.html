@@ -852,6 +852,11 @@ let WS_URL = `ws://${location.hostname}:8765`;
 let ws = null;
 let reconectando = false;
 
+function urlWebSocket(porta) {
+  if (location.protocol === 'https:') return `wss://${location.host}/ws`;
+  return `ws://${location.hostname}:${porta}`;
+}
+
 function conectarWS() {
   ws = new WebSocket(WS_URL);
 
@@ -899,7 +904,7 @@ fetch('/api/config')
   .then(r => r.json())
   .catch(() => ({ ws_port: 8765 }))
   .then(cfg => {
-    WS_URL = `ws://${location.hostname}:${cfg.ws_port}`;
+    WS_URL = urlWebSocket(cfg.ws_port || 8765);
     conectarWS();
   });
 

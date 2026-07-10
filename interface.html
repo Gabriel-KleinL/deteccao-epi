@@ -6,6 +6,7 @@
 <title>Sistema de Detecção EPI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -221,6 +222,24 @@
   }
 
   .btn-cam:hover { background: var(--primary); color: #fff; }
+
+  .camera-select {
+    width: min(320px, 86%);
+    margin-top: 2px;
+    padding: 8px 10px;
+    background: rgba(18,18,18,0.9);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  .camera-select:focus {
+    border-color: var(--primary);
+  }
 
   /* botão resetar câmera */
   .btn-reset-cam {
@@ -579,6 +598,9 @@
       <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
     </svg>
     <p>CÂMERA INATIVA</p>
+    <p id="camera-status" style="max-width:360px;text-align:center;line-height:1.5">Clique em procurar câmeras</p>
+    <select class="camera-select" id="camera-select-overlay"></select>
+    <button class="btn-cam" id="btn-search-camera">PROCURAR CÂMERAS</button>
     <button class="btn-cam" id="btn-start">INICIAR CÂMERA</button>
   </div>
 
@@ -672,6 +694,10 @@
       <button class="btn-zona" id="btn-caixas" onclick="toggleCaixas()">CAIXAS DE DETECÇÃO</button>
       <button class="btn-zona" id="btn-modo-cam" onclick="toggleModoCam()" title="Usar câmera do servidor via MJPEG (útil quando servidor está em outra máquina)">CÂMERA SERVIDOR</button>
     </div>
+    <div class="zona-btns" style="margin-top:6px">
+      <button class="btn-zona" id="btn-search-camera-panel" onclick="procurarCameras(true)" style="grid-column:1/-1">PROCURAR CÂMERAS</button>
+    </div>
+    <select class="ze-input" id="camera-select-panel" style="margin-top:6px"></select>
   </div>
 
   <hr>
@@ -812,6 +838,24 @@ let caixasAtivas  = false;
 let ultimasCaixas = [];
 let canvasBoxes   = null;
 let ctxBoxes      = null;
+let canvasEnvio   = document.createElement('canvas');
+let envioEmAndamento = false;
+let envioTimer = null;
+let envioTimeout = null;
+let sessaoLocal = null;
+let inferenciaLocalAtiva = false;
+let inferenciaRodando = false;
+let inferenciaTimer = null;
+let canvasInferencia = document.createElement('canvas');
+let ultimoAlertaLocal = new Map();
+
+const MODELO_LOCAL_URL = '/modelos/best.onnx';
+const IMG_SIZE_LOCAL = 640;
+const CLASSES_MODELO = [
+  'Capacete', 'Mascara', 'SEM-Capacete', 'SEM-Mascara',
+  'SEM-Colete', 'Pessoa', 'Cone de Seguranca', 'Colete',
+  'Maquinario', 'Veiculo',
+];
 
 // ─── relógio ──────────────────────────────────────────────────────────────
 function tick() {
@@ -840,34 +884,252 @@ atualizar();
 
 // ─── câmera ───────────────────────────────────────────────────────────────
 let streamAtivo = null;
+let modoServidor = false;
+let cameraAtualId = localStorage.getItem('epi_camera_id') || '';
+let camerasConhecidas = [];
 
-async function iniciarCamera(alertarErro = false) {
+function statusCamera(msg) {
+  const el = document.getElementById('camera-status');
+  if (el) el.textContent = msg;
+}
+
+function textoErroCamera(err) {
+  const nome = err?.name || 'Erro';
+  const msg = err?.message ? ` (${err.message})` : '';
+  const mapa = {
+    NotAllowedError: 'Permissao de camera bloqueada pelo navegador.',
+    NotFoundError: 'Nenhuma camera foi encontrada pelo navegador.',
+    NotReadableError: 'A camera existe, mas esta ocupada por outro aplicativo.',
+    OverconstrainedError: 'A camera selecionada nao esta disponivel neste notebook.',
+    SecurityError: 'O navegador bloqueou o acesso por seguranca.',
+  };
+  return `${mapa[nome] || 'Nao foi possivel acessar a camera.'} ${nome}${msg}`;
+}
+
+function selectsCamera() {
+  return [
+    document.getElementById('camera-select-overlay'),
+    document.getElementById('camera-select-panel'),
+  ].filter(Boolean);
+}
+
+function preencherSelectCameras(cameras) {
+  camerasConhecidas = cameras;
+  selectsCamera().forEach(sel => {
+    sel.innerHTML = '';
+    if (!cameras.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhuma câmera encontrada';
+      sel.appendChild(opt);
+      return;
+    }
+
+    cameras.forEach((cam, i) => {
+      const opt = document.createElement('option');
+      opt.value = cam.deviceId;
+      opt.textContent = cam.label || `Camera ${i + 1}`;
+      sel.appendChild(opt);
+    });
+
+    if (cameraAtualId && cameras.some(cam => cam.deviceId === cameraAtualId)) {
+      sel.value = cameraAtualId;
+    } else {
+      sel.value = cameras[0].deviceId;
+      cameraAtualId = sel.value;
+      localStorage.setItem('epi_camera_id', cameraAtualId);
+    }
+  });
+}
+
+async function listarCameras(pedirPermissao = false) {
+  if (!navigator.mediaDevices?.enumerateDevices) {
+    throw new Error('Navegador sem suporte a câmera.');
+  }
+
+  if (pedirPermissao) {
+    statusCamera('Solicitando permissao da camera...');
+    const temp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    temp.getTracks().forEach(t => t.stop());
+  }
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cameras = devices.filter(d => d.kind === 'videoinput');
+  preencherSelectCameras(cameras);
+  statusCamera(cameras.length ? `${cameras.length} camera(s) encontrada(s)` : 'Nenhuma camera encontrada');
+  return cameras;
+}
+
+async function procurarCameras(iniciarDepois = false) {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const cameras = await listarCameras(true);
+    if (!cameras.length) {
+      alert('Nenhuma câmera encontrada neste computador.');
+      return;
+    }
+    if (iniciarDepois) await iniciarCamera(true, cameraAtualId);
+  } catch (err) {
+    const msg = textoErroCamera(err);
+    statusCamera(msg);
+    alert(msg);
+  }
+}
+
+async function iniciarCamera(alertarErro = false, deviceId = cameraAtualId) {
+  try {
+    if (modoServidor) {
+      modoServidor = false;
+      const img = document.getElementById('stream-img');
+      const btn = document.getElementById('btn-modo-cam');
+      img.style.display = 'none';
+      img.src = '';
+      btn.classList.remove('ativo');
+      btn.textContent = 'CÂMERA SERVIDOR';
+    }
+    if (!camerasConhecidas.length) {
+      await listarCameras(false).catch(() => {});
+    }
+
+    let constraints = deviceId
+      ? { video: { deviceId: { exact: deviceId } }, audio: false }
+      : { video: true, audio: false };
+
+    if (streamAtivo) streamAtivo.getTracks().forEach(t => t.stop());
+
+    statusCamera('Abrindo camera...');
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      if (deviceId && ['NotFoundError', 'OverconstrainedError'].includes(err?.name)) {
+        cameraAtualId = '';
+        localStorage.removeItem('epi_camera_id');
+        constraints = { video: true, audio: false };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } else {
+        throw err;
+      }
+    }
+
     streamAtivo  = stream;
+    const track = stream.getVideoTracks()[0];
+    const settings = track?.getSettings?.() || {};
+    if (settings.deviceId) {
+      cameraAtualId = settings.deviceId;
+      localStorage.setItem('epi_camera_id', cameraAtualId);
+      selectsCamera().forEach(sel => { if (sel.value !== cameraAtualId) sel.value = cameraAtualId; });
+    }
     const video  = document.getElementById('video');
     video.srcObject = stream;
     document.getElementById('cam-off').style.display = 'none';
     document.getElementById('btn-reset-cam').classList.add('visivel');
     video.addEventListener('loadedmetadata', sincronizarCanvas);
-  } catch {
-    if (alertarErro) alert('Permissão de câmera negada ou dispositivo não encontrado.');
+    iniciarInferenciaLocal();
+    statusCamera('Camera ativa');
+    listarCameras(false).catch(() => {});
+  } catch (err) {
+    const msg = textoErroCamera(err);
+    statusCamera(msg);
+    document.getElementById('cam-off').style.display = 'flex';
+    if (alertarErro) alert(msg);
   }
 }
 
 document.getElementById('btn-start').addEventListener('click', () => iniciarCamera(true));
+document.getElementById('btn-search-camera').addEventListener('click', () => procurarCameras(true));
 
-// inicia câmera automaticamente ao carregar a página
-iniciarCamera();
+function pararEnvioFrames() {
+  if (envioTimer) clearInterval(envioTimer);
+  if (envioTimeout) clearTimeout(envioTimeout);
+  envioTimer = null;
+  envioTimeout = null;
+  envioEmAndamento = false;
+}
+
+function pararInferenciaLocal() {
+  if (inferenciaTimer) clearInterval(inferenciaTimer);
+  inferenciaTimer = null;
+  inferenciaRodando = false;
+}
+
+function iniciarEnvioFrames() {
+  pararEnvioFrames();
+  envioTimer = setInterval(enviarFrameCliente, 500);
+}
+
+function enviarFrameCliente() {
+  if (envioEmAndamento || modoServidor) return;
+  if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
+  const video = document.getElementById('video');
+  if (!streamAtivo || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+
+  envioEmAndamento = true;
+  const maxW = 640;
+  const escala = Math.min(1, maxW / video.videoWidth);
+  canvasEnvio.width = Math.max(1, Math.round(video.videoWidth * escala));
+  canvasEnvio.height = Math.max(1, Math.round(video.videoHeight * escala));
+  const ctxEnvio = canvasEnvio.getContext('2d', { willReadFrequently: false });
+  ctxEnvio.drawImage(video, 0, 0, canvasEnvio.width, canvasEnvio.height);
+  canvasEnvio.toBlob(blob => {
+    if (!blob) {
+      envioEmAndamento = false;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        if (wsCliente && wsCliente.readyState === WebSocket.OPEN) {
+          wsCliente.send(JSON.stringify({ tipo: 'frame_cliente', imagem: reader.result }));
+          if (envioTimeout) clearTimeout(envioTimeout);
+          envioTimeout = setTimeout(() => {
+            envioEmAndamento = false;
+            envioTimeout = null;
+          }, 25000);
+        } else {
+          envioEmAndamento = false;
+        }
+      } catch {
+        envioEmAndamento = false;
+      }
+    };
+    reader.onerror = () => { envioEmAndamento = false; };
+    reader.readAsDataURL(blob);
+  }, 'image/jpeg', 0.55);
+}
+
+function configurarSelectsCamera() {
+  selectsCamera().forEach(sel => {
+    if (sel.dataset.configurado) return;
+    sel.dataset.configurado = '1';
+    sel.addEventListener('change', () => {
+      if (!sel.value) return;
+      cameraAtualId = sel.value;
+      localStorage.setItem('epi_camera_id', cameraAtualId);
+      selectsCamera().forEach(outro => { if (outro !== sel) outro.value = cameraAtualId; });
+      iniciarCamera(true, cameraAtualId);
+    });
+  });
+}
+
+configurarSelectsCamera();
+
+if (navigator.mediaDevices?.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', () => listarCameras(false).catch(() => {}));
+}
+
+// lista o que o navegador permitir antes da permissao; a abertura fica no botao.
+listarCameras(false).catch(() => statusCamera('Clique em procurar cameras'));
 
 document.getElementById('btn-reset-cam').addEventListener('click', async () => {
   if (streamAtivo) {
     streamAtivo.getTracks().forEach(t => t.stop());
     streamAtivo = null;
   }
+  pararEnvioFrames();
+  pararInferenciaLocal();
   const video = document.getElementById('video');
   video.srcObject = null;
-  await iniciarCamera();
+  await iniciarCamera(true, cameraAtualId);
 });
 
 // ─── canvas / zonas ──────────────────────────────────────────────────────
@@ -1331,6 +1593,202 @@ function toggleCaixas() {
   desenharCaixas(ultimasCaixas);
 }
 
+// ─── inferência local ONNX ─────────────────────────────────────────────────
+async function carregarModeloLocal() {
+  if (sessaoLocal || !window.ort) return sessaoLocal;
+  statusCamera('Carregando modelo local...');
+  ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+  sessaoLocal = await ort.InferenceSession.create(MODELO_LOCAL_URL, {
+    executionProviders: ['wasm'],
+    graphOptimizationLevel: 'all',
+  });
+  statusCamera('Modelo local pronto');
+  return sessaoLocal;
+}
+
+function intersecaoSobreUniao(a, b) {
+  const x1 = Math.max(a.bbox[0], b.bbox[0]);
+  const y1 = Math.max(a.bbox[1], b.bbox[1]);
+  const x2 = Math.min(a.bbox[2], b.bbox[2]);
+  const y2 = Math.min(a.bbox[3], b.bbox[3]);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const areaA = Math.max(0, a.bbox[2] - a.bbox[0]) * Math.max(0, a.bbox[3] - a.bbox[1]);
+  const areaB = Math.max(0, b.bbox[2] - b.bbox[0]) * Math.max(0, b.bbox[3] - b.bbox[1]);
+  return inter / Math.max(1e-6, areaA + areaB - inter);
+}
+
+function nmsLocal(dets, limite = 0.45) {
+  const ordenadas = [...dets].sort((a, b) => b.score - a.score);
+  const saida = [];
+  while (ordenadas.length) {
+    const atual = ordenadas.shift();
+    saida.push(atual);
+    for (let i = ordenadas.length - 1; i >= 0; i--) {
+      if (ordenadas[i].nome === atual.nome && intersecaoSobreUniao(atual, ordenadas[i]) > limite) {
+        ordenadas.splice(i, 1);
+      }
+    }
+  }
+  return saida;
+}
+
+function pontoDentroLocal(px, py, pontos) {
+  let dentro = false;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const xi = pontos[i].x, yi = pontos[i].y;
+    const xj = pontos[j].x, yj = pontos[j].y;
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+
+function emZonaLocal(bbox, zona) {
+  const pontos = zona.pontos || [];
+  if (!pontos.length) return false;
+  const cx = (bbox[0] + bbox[2]) / 2;
+  const cy = (bbox[1] + bbox[3]) / 2;
+  const dentro = pontoDentroLocal(cx, cy, pontos);
+  return (zona.modo || 'dentro') === 'dentro' ? dentro : !dentro;
+}
+
+function zonasDaDeteccaoLocal(bbox, nome) {
+  return zonas.filter(z => z.ativa !== false && (z.classes || []).includes(nome) && emZonaLocal(bbox, z));
+}
+
+function deteccoesDaSaidaLocal(output) {
+  const dados = output.data;
+  const dims = output.dims;
+  const canais = dims[1];
+  const total = dims[2];
+  const dets = [];
+  const confGeral = parseInt(document.getElementById('slider-conf').value) / 100;
+  const confAlerta = parseInt(document.getElementById('slider-conf-alerta').value) / 100;
+
+  for (let i = 0; i < total; i++) {
+    const cx = dados[i];
+    const cy = dados[total + i];
+    const w = dados[2 * total + i];
+    const h = dados[3 * total + i];
+    let melhorClasse = -1;
+    let melhorScore = 0;
+
+    for (let c = 4; c < canais; c++) {
+      const score = dados[c * total + i];
+      if (score > melhorScore) {
+        melhorScore = score;
+        melhorClasse = c - 4;
+      }
+    }
+
+    const nome = CLASSES_MODELO[melhorClasse];
+    const limiar = nome && nome.startsWith('SEM-') ? confAlerta : confGeral;
+    if (!nome || melhorScore < limiar) continue;
+
+    dets.push({
+      nome,
+      conf: Math.round(melhorScore * 100),
+      score: melhorScore,
+      bbox: [
+        Math.max(0, (cx - w / 2) / IMG_SIZE_LOCAL),
+        Math.max(0, (cy - h / 2) / IMG_SIZE_LOCAL),
+        Math.min(1, (cx + w / 2) / IMG_SIZE_LOCAL),
+        Math.min(1, (cy + h / 2) / IMG_SIZE_LOCAL),
+      ],
+    });
+  }
+  return nmsLocal(dets).slice(0, 50);
+}
+
+function emitirAlertasLocais(deteccoes) {
+  if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
+  const agora = Date.now() / 1000;
+  const intervalo = 3;
+
+  deteccoes.forEach(det => {
+    if (!det.nome.startsWith('SEM-')) return;
+    let zonasEvento = [];
+    if (zonas.some(z => z.ativa !== false)) {
+      zonasEvento = zonasDaDeteccaoLocal(det.bbox, det.nome);
+    } else if (classesAtivas.has(det.nome)) {
+      zonasEvento = [{ id: '__geral__', nome: 'Geral', cor: '#C73C3C' }];
+    }
+
+    zonasEvento.forEach(z => {
+      const chave = `${det.nome}:${z.id}`;
+      if (agora - (ultimoAlertaLocal.get(chave) || 0) < intervalo) return;
+      ultimoAlertaLocal.set(chave, agora);
+      wsCliente.send(JSON.stringify({
+        tipo: 'evento_cliente',
+        evento: {
+          tipo: 'alerta',
+          camera: 'NAVEGADOR',
+          msg: `SEM ${det.nome.replace('SEM-', '')} detectado`,
+          confianca: det.conf,
+          zona: z.nome,
+          cor_zona: z.cor || '#C73C3C',
+        },
+      }));
+    });
+  });
+}
+
+async function executarInferenciaLocal() {
+  if (inferenciaRodando || modoServidor || !streamAtivo) return;
+  const video = document.getElementById('video');
+  if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+
+  inferenciaRodando = true;
+  try {
+    const sessao = await carregarModeloLocal();
+    if (!sessao) return;
+
+    canvasInferencia.width = IMG_SIZE_LOCAL;
+    canvasInferencia.height = IMG_SIZE_LOCAL;
+    const ctxInf = canvasInferencia.getContext('2d', { willReadFrequently: true });
+    ctxInf.drawImage(video, 0, 0, IMG_SIZE_LOCAL, IMG_SIZE_LOCAL);
+    const pixels = ctxInf.getImageData(0, 0, IMG_SIZE_LOCAL, IMG_SIZE_LOCAL).data;
+    const entrada = new Float32Array(3 * IMG_SIZE_LOCAL * IMG_SIZE_LOCAL);
+    const areaImg = IMG_SIZE_LOCAL * IMG_SIZE_LOCAL;
+    for (let i = 0, p = 0; i < pixels.length; i += 4, p++) {
+      entrada[p] = pixels[i] / 255;
+      entrada[areaImg + p] = pixels[i + 1] / 255;
+      entrada[2 * areaImg + p] = pixels[i + 2] / 255;
+    }
+
+    const nomeEntrada = sessao.inputNames[0];
+    const feeds = {};
+    feeds[nomeEntrada] = new ort.Tensor('float32', entrada, [1, 3, IMG_SIZE_LOCAL, IMG_SIZE_LOCAL]);
+    const resultados = await sessao.run(feeds);
+    const saida = resultados[sessao.outputNames[0]];
+    const deteccoes = deteccoesDaSaidaLocal(saida);
+    ultimasCaixas = deteccoes.map(({ nome, conf, bbox }) => ({ nome, conf, bbox }));
+    desenharCaixas(ultimasCaixas);
+    emitirAlertasLocais(ultimasCaixas);
+  } catch (err) {
+    console.error(err);
+    statusCamera('IA local indisponivel; usando servidor');
+    inferenciaLocalAtiva = false;
+    iniciarEnvioFrames();
+  } finally {
+    inferenciaRodando = false;
+  }
+}
+
+async function iniciarInferenciaLocal() {
+  if (inferenciaTimer) clearInterval(inferenciaTimer);
+  try {
+    await carregarModeloLocal();
+    inferenciaLocalAtiva = true;
+    pararEnvioFrames();
+    inferenciaTimer = setInterval(executarInferenciaLocal, 250);
+    executarInferenciaLocal();
+  } catch (err) {
+    console.error(err);
+    inferenciaLocalAtiva = false;
+    iniciarEnvioFrames();
+  }
+}
+
 // ─── Limiar de confiança ──────────────────────────────────────────────────
 (function initLimiar() {
   const sliderConf      = document.getElementById('slider-conf');
@@ -1376,34 +1834,40 @@ function enviarZonas() {
 
 let _wsPort = 8765;
 
+function urlWebSocket() {
+  if (location.protocol === 'https:') return `wss://${location.host}/ws`;
+  return `ws://${location.hostname}:${_wsPort}`;
+}
+
 function conectarWS() {
-  wsCliente = new WebSocket(`ws://${location.hostname}:${_wsPort}`);
-  wsCliente.onopen = () => { atualizar(); enviarZonas(); if (window._enviarLimiar) window._enviarLimiar(); };
+  wsCliente = new WebSocket(urlWebSocket());
+  wsCliente.onopen = () => { atualizar(); enviarZonas(); if (window._enviarLimiar) window._enviarLimiar(); enviarFrameCliente(); };
   wsCliente.onmessage = ({ data }) => {
     try {
       const ev = JSON.parse(data);
-      if (ev.tipo === 'frame') { ultimasCaixas = ev.caixas || []; desenharCaixas(ultimasCaixas); }
+      if (ev.tipo === 'frame') {
+        ultimasCaixas = ev.caixas || [];
+        desenharCaixas(ultimasCaixas);
+        envioEmAndamento = false;
+        if (envioTimeout) clearTimeout(envioTimeout);
+        envioTimeout = null;
+      }
     } catch {}
   };
-  wsCliente.onclose = () => setTimeout(conectarWS, 3000);
+  wsCliente.onclose = () => { envioEmAndamento = false; setTimeout(conectarWS, 3000); };
   wsCliente.onerror = () => wsCliente.close();
 }
 
-// carrega porta WS do servidor; se remoto, ativa câmera do servidor automaticamente
+// carrega porta WS do servidor
 fetch('/api/config')
   .then(r => r.json())
   .catch(() => ({ ws_port: 8765 }))
   .then(cfg => {
     _wsPort = cfg.ws_port || 8765;
     conectarWS();
-    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      toggleModoCam();
-    }
   });
 
 // ─── modo câmera servidor (MJPEG /stream) ────────────────────────────────────
-let modoServidor = false;
-
 function toggleModoCam() {
   modoServidor = !modoServidor;
   const video  = document.getElementById('video');
@@ -1412,6 +1876,8 @@ function toggleModoCam() {
   const camOff = document.getElementById('cam-off');
 
   if (modoServidor) {
+    pararEnvioFrames();
+    pararInferenciaLocal();
     if (streamAtivo) { streamAtivo.getTracks().forEach(t => t.stop()); streamAtivo = null; }
     video.srcObject = null;
     video.style.display = 'none';
