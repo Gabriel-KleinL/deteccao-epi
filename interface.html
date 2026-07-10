@@ -505,6 +505,7 @@
   }
 
   .ze-classe-row input { display: none; }
+  .ze-classe-row.disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* TOGGLES */
   .toggle-row {
@@ -519,6 +520,7 @@
 
   .toggle-row:hover   { opacity: 0.85; }
   .toggle-row.disabled { opacity: 0.3; }
+  .toggle-row.disabled:hover { opacity: 0.3; }
 
   .toggle-info {
     display: flex;
@@ -848,6 +850,7 @@ let inferenciaRodando = false;
 let inferenciaTimer = null;
 let canvasInferencia = document.createElement('canvas');
 let ultimoAlertaLocal = new Map();
+let modeloOculosDisponivel = true;
 
 const MODELO_LOCAL_URL = '/modelos/best.onnx';
 const IMG_SIZE_LOCAL = 640;
@@ -856,6 +859,27 @@ const CLASSES_MODELO = [
   'SEM-Colete', 'Pessoa', 'Cone de Seguranca', 'Colete',
   'Maquinario', 'Veiculo',
 ];
+const CLASSES_OCULOS = ['Oculos de Protecao', 'SEM-Oculos'];
+
+function classeDisponivel(nome) {
+  return modeloOculosDisponivel || !CLASSES_OCULOS.includes(nome);
+}
+
+function aplicarDisponibilidadeModelos(cfg) {
+  modeloOculosDisponivel = cfg.modelo_oculos !== false;
+
+  document.querySelectorAll('input[data-classe]').forEach(cb => {
+    const disponivel = classeDisponivel(cb.dataset.classe);
+    cb.disabled = !disponivel;
+    if (!disponivel) cb.checked = false;
+
+    const row = cb.closest('.toggle-row');
+    if (row) {
+      row.classList.toggle('disabled', !disponivel);
+      row.title = disponivel ? '' : 'Modelo de oculos nao encontrado em modelos/oculos.pt';
+    }
+  });
+}
 
 // ─── relógio ──────────────────────────────────────────────────────────────
 function tick() {
@@ -868,7 +892,10 @@ tick(); setInterval(tick, 1000);
 function atualizar() {
   const checks = document.querySelectorAll('input[type=checkbox]');
   const habilitados = [];
-  checks.forEach(cb => { if (cb.checked && cb.dataset.classe) habilitados.push(cb.dataset.classe); });
+  checks.forEach(cb => {
+    if (cb.dataset.classe && !classeDisponivel(cb.dataset.classe)) cb.checked = false;
+    if (cb.checked && cb.dataset.classe && !cb.disabled) habilitados.push(cb.dataset.classe);
+  });
 
   const n = habilitados.length;
   document.getElementById('active-count').textContent = n + ' ATIVO' + (n !== 1 ? 'S' : '');
@@ -1273,15 +1300,19 @@ function abrirEditor(id) {
   const container = document.getElementById('ze-classes');
   container.innerHTML = '';
   CLASSES_EDITOR.forEach(c => {
+    const disponivel = classeDisponivel(c.nome);
+    if (!disponivel) editClasses.delete(c.nome);
+
     const label = document.createElement('label');
-    label.className = 'ze-classe-row';
+    label.className = 'ze-classe-row' + (disponivel ? '' : ' disabled');
     label.style.setProperty('--ze-accent', c.acc);
+    label.title = disponivel ? '' : 'Modelo de oculos nao encontrado em modelos/oculos.pt';
     label.innerHTML = `
       <div class="ze-classe-info">
         <div class="ze-classe-dot" style="background:${c.cor}"></div>
         ${c.label}
       </div>
-      <input type="checkbox" ${editClasses.has(c.nome) ? 'checked' : ''} data-nome="${c.nome}">
+      <input type="checkbox" ${editClasses.has(c.nome) ? 'checked' : ''} ${disponivel ? '' : 'disabled'} data-nome="${c.nome}">
       <div class="ze-switch"></div>
     `;
     label.querySelector('input').addEventListener('change', e => {
@@ -1829,7 +1860,11 @@ async function iniciarInferenciaLocal() {
 // ─── WebSocket ────────────────────────────────────────────────────────────
 function enviarZonas() {
   if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
-  wsCliente.send(JSON.stringify({ tipo: 'zonas', zonas: zonas.filter(z => z.ativa) }));
+  const zonasAtivas = zonas
+    .filter(z => z.ativa)
+    .map(z => ({ ...z, classes: (z.classes || []).filter(classeDisponivel) }))
+    .filter(z => z.classes.length);
+  wsCliente.send(JSON.stringify({ tipo: 'zonas', zonas: zonasAtivas }));
 }
 
 let _wsPort = 8765;
@@ -1863,6 +1898,8 @@ fetch('/api/config')
   .then(r => r.json())
   .catch(() => ({ ws_port: 8765 }))
   .then(cfg => {
+    aplicarDisponibilidadeModelos(cfg);
+    atualizar();
     _wsPort = cfg.ws_port || 8765;
     conectarWS();
   });

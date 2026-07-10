@@ -170,7 +170,10 @@ async def obter_modelos():
             if not Path(MODELO_EPI).exists():
                 raise FileNotFoundError(f"Modelo não encontrado: {MODELO_EPI}")
             _modelo_epi = YOLO(MODELO_EPI)
-            _modelo_oculos = YOLO(MODELO_OCULOS) if Path(MODELO_OCULOS).exists() else None
+            if Path(MODELO_OCULOS).exists():
+                _modelo_oculos = YOLO(MODELO_OCULOS)
+            else:
+                print(f"[YOLO] Modelo de óculos ausente: {MODELO_OCULOS}")
             print("[YOLO] Modelo EPI carregado.")
     return _modelo_epi, _modelo_oculos
 
@@ -415,7 +418,11 @@ def limpar_capturas_antigas(manter_dias: int = 7):
 class HandlerSilencioso(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/config':
-            corpo = json.dumps({"ws_port": WS_PORT, "http_port": HTTP_PORT}).encode()
+            corpo = json.dumps({
+                "ws_port": WS_PORT,
+                "http_port": HTTP_PORT,
+                "modelo_oculos": Path(MODELO_OCULOS).exists(),
+            }).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", len(corpo))

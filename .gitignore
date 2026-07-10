@@ -6,6 +6,7 @@ __pycache__/
 .pip-cache/
 .matplotlib/
 .ultralytics/
+logs/
 
 # datasets e treinos (arquivos grandes)
 dados/dataset_oculos/
