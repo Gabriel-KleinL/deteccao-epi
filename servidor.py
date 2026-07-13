@@ -132,8 +132,8 @@ MODELO_EPI       = BASE / "modelos/best.pt"
 MODELO_OCULOS    = BASE / "modelos/oculos.pt"
 HTTP_PORT        = int(os.environ.get("PORT", _cfg.get("http_port", 8080)))
 WS_PORT          = int(os.environ.get("WS_PORT", _cfg.get("ws_port", 8765)))
-CONFIANCA        = float(_cfg.get("confianca",        0.45))
-CONFIANCA_ALERTA = float(_cfg.get("confianca_alerta", 0.70))
+CONFIANCA_PADRAO = float(_cfg.get("confianca_padrao", 0.45))
+CONFIANCAS       = {k: float(v) for k, v in _cfg.get("confiancas", {}).items()}
 CAMERA_IDX       = int(sys.argv[1]) if len(sys.argv) > 1 else int(_cfg.get("camera", 0))
 _LOG_DIAS        = int(_cfg.get("log_manter_dias",      30))
 _CAPTURAS_DIAS   = int(_cfg.get("capturas_manter_dias",  7))
@@ -143,11 +143,17 @@ CLASSES_EPI = [
     "SEM-Colete", "Pessoa", "Cone de Seguranca", "Colete",
     "Maquinario", "Veiculo",
 ]
-CLASSES_OCULOS = ["Oculos de Protecao", "SEM-Oculos"]
+CLASSES_OCULOS = ["Oculos de Protecao", "SEM-Oculos de Protecao"]
 
-ALERTAS = {"SEM-Capacete", "SEM-Mascara", "SEM-Colete", "SEM-Oculos"}
+ALERTAS = {"SEM-Capacete", "SEM-Mascara", "SEM-Colete", "SEM-Oculos de Protecao"}
 AVISOS  = set()
 SEGUROS = {"Capacete", "Mascara", "Colete", "Oculos de Protecao"}
+OCULTAS = {"Pessoa", "Cone de Seguranca", "Maquinario", "Veiculo"}
+
+# menor limiar configurado, usado como piso na chamada do modelo pra nao
+# descartar deteccoes antes da checagem individual por classe
+_CONF_MODELO_EPI    = min([CONFIANCAS.get(n, CONFIANCA_PADRAO) for n in CLASSES_EPI if n not in OCULTAS], default=CONFIANCA_PADRAO)
+_CONF_MODELO_OCULOS = min([CONFIANCAS.get(n, CONFIANCA_PADRAO) for n in CLASSES_OCULOS], default=CONFIANCA_PADRAO)
 
 # ─── clientes WebSocket ───────────────────────────────────────────────────────
 clientes: set = set()
@@ -194,7 +200,9 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
     detectados: list[tuple] = []
 
     def processar_deteccao(nome, conf_raw, bbox):
-        limiar = CONFIANCA_ALERTA if nome in ALERTAS else CONFIANCA
+        if nome in OCULTAS:
+            return
+        limiar = CONFIANCAS.get(nome, CONFIANCA_PADRAO)
         if conf_raw < limiar:
             return
         conf = round(conf_raw * 100)
@@ -209,7 +217,7 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
             detectados.append((nome, conf, "Geral", "__geral__", "#C73C3C"))
 
     try:
-        for r in modelo_epi(frame, conf=CONFIANCA, verbose=False):
+        for r in modelo_epi(frame, conf=_CONF_MODELO_EPI, verbose=False):
             for caixa in r.boxes:
                 cls = int(caixa.cls[0])
                 if cls < 0 or cls >= len(CLASSES_EPI):
@@ -224,7 +232,7 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
 
     if modelo_oculos:
         try:
-            for r in modelo_oculos(frame, conf=CONFIANCA, verbose=False):
+            for r in modelo_oculos(frame, conf=_CONF_MODELO_OCULOS, agnostic_nms=True, iou=0.3, verbose=False):
                 for caixa in r.boxes:
                     cls = int(caixa.cls[0])
                     if cls < 0 or cls >= len(CLASSES_OCULOS):
@@ -238,8 +246,7 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
             print(f"[YOLO] Erro óculos: {e}")
 
     caixas_visiveis = [c for c in caixas_frame if bbox_visivel(c["bbox"])]
-    pessoas = sum(1 for c in caixas_frame if c["nome"] == "Pessoa")
-    await broadcast({"tipo": "frame", "caixas": caixas_visiveis, "pessoas": pessoas})
+    await broadcast({"tipo": "frame", "caixas": caixas_visiveis})
 
     tem_alerta = False
     for nome, conf, zona_nome, zona_id, zona_cor in detectados:
@@ -329,12 +336,6 @@ async def registrar(websocket):
                     intervalo_min = float(ev.get("segundos", 3))
                     print(f"[CFG]  Intervalo de alertas: {intervalo_min}s")
 
-                elif ev.get("tipo") == "confianca":
-                    global CONFIANCA, CONFIANCA_ALERTA
-                    CONFIANCA        = float(ev.get("conf",        CONFIANCA))
-                    CONFIANCA_ALERTA = float(ev.get("conf_alerta", CONFIANCA_ALERTA))
-                    print(f"[CFG]  Confiança: geral={CONFIANCA:.0%}  alerta={CONFIANCA_ALERTA:.0%}")
-
                 elif ev.get("tipo") == "frame_cliente":
                     global _ultimo_frame_browser
                     agora = time.time()
@@ -422,6 +423,8 @@ class HandlerSilencioso(SimpleHTTPRequestHandler):
                 "ws_port": WS_PORT,
                 "http_port": HTTP_PORT,
                 "modelo_oculos": Path(MODELO_OCULOS).exists(),
+                "confianca_padrao": CONFIANCA_PADRAO,
+                "confiancas": CONFIANCAS,
             }).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

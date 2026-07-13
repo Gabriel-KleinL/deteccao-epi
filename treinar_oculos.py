@@ -7,10 +7,11 @@ modelo = YOLO(PROJETO / "modelos/yolov8n.pt")
 
 resultado = modelo.train(
     data=str(PROJETO / "dados/oculos.yaml"),
-    epochs=80,
-    imgsz=640,
-    batch=16,
-    patience=15,
+    epochs=40,
+    imgsz=416,
+    batch=32,
+    patience=10,
+    cache="ram",
     device="mps",
     project=str(PROJETO / "saidas"),
     name="oculos_epi",
@@ -23,7 +24,7 @@ resultado = modelo.train(
     scale=0.5,
     flipud=0.0,
     fliplr=0.5,
-    mosaic=1.0,
+    mosaic=0.0,
     mixup=0.1,
     copy_paste=0.1,
 )

@@ -507,10 +507,6 @@
     <span class="stat-label">Total eventos</span>
     <span class="stat-valor" id="stat-total">0</span>
   </div>
-  <div class="stat-card neutro" style="border-color:#06b6d4">
-    <span class="stat-label" style="color:#06b6d4">Pessoas na área</span>
-    <span class="stat-valor" id="stat-pessoas" style="color:#06b6d4">—</span>
-  </div>
 </div>
 
 <!-- CAPTURAS DE ALERTAS -->
@@ -871,7 +867,6 @@ function conectarWS() {
     try {
       const ev = JSON.parse(data);
       if (ev.tipo === 'frame') {
-        document.getElementById('stat-pessoas').textContent = ev.pessoas ?? 0;
         resetCamTimer();
         return;
       }

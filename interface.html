@@ -625,31 +625,6 @@
 
 <div class="panel">
 
-  <!-- LIMIAR DE CONFIANÇA -->
-  <div>
-    <div class="section-title">Limiar de Confiança</div>
-
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:12px;color:var(--muted)">Detecção geral</span>
-          <span class="val" style="font-family:var(--mono);font-size:11px" id="val-conf">45%</span>
-        </div>
-        <input type="range" id="slider-conf" min="20" max="90" value="45"
-               style="width:100%;accent-color:var(--primary);cursor:pointer">
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:12px;color:var(--muted)">Alertas (SEM-EPI)</span>
-          <span class="val" style="font-family:var(--mono);font-size:11px" id="val-conf-alerta">70%</span>
-        </div>
-        <input type="range" id="slider-conf-alerta" min="30" max="95" value="70"
-               style="width:100%;accent-color:var(--primary);cursor:pointer">
-      </div>
-    </div>
-    <hr style="margin-top:12px">
-  </div>
-
   <!-- ZONAS -->
   <div>
     <div class="section-title">Zonas de Detecção</div>
@@ -693,7 +668,7 @@
     </div>
 
     <div class="zona-btns" style="margin-top:6px">
-      <button class="btn-zona" id="btn-caixas" onclick="toggleCaixas()">CAIXAS DE DETECÇÃO</button>
+      <button class="btn-zona ativo" id="btn-caixas" onclick="toggleCaixas()">CAIXAS DE DETECÇÃO</button>
       <button class="btn-zona" id="btn-modo-cam" onclick="toggleModoCam()" title="Usar câmera do servidor via MJPEG (útil quando servidor está em outra máquina)">CÂMERA SERVIDOR</button>
     </div>
     <div class="zona-btns" style="margin-top:6px">
@@ -777,56 +752,13 @@
       <input type="checkbox" data-classe="SEM-Colete" onchange="atualizar()">
       <div class="switch"></div>
     </label>
-  </div>
-
-  <hr>
-
-  <!-- OUTROS -->
-  <div>
-    <div class="section-title">Outros</div>
-
-    <label class="toggle-row" style="--accent: var(--yellow)">
-      <div class="toggle-info">
-        <div class="color-dot" style="background:var(--yellow)"></div>
-        <span class="toggle-label">Pessoa</span>
-      </div>
-      <input type="checkbox" data-classe="Pessoa" onchange="atualizar()">
-      <div class="switch"></div>
-    </label>
-
-    <label class="toggle-row" style="--accent: var(--blue-light)">
-      <div class="toggle-info">
-        <div class="color-dot" style="background:var(--blue-light)"></div>
-        <span class="toggle-label">Cone de Segurança</span>
-      </div>
-      <input type="checkbox" data-classe="Cone de Seguranca" onchange="atualizar()">
-      <div class="switch"></div>
-    </label>
 
     <label class="toggle-row" style="--accent: var(--red)">
       <div class="toggle-info">
         <div class="color-dot" style="background:var(--red)"></div>
         <span class="toggle-label">Sem Óculos de Proteção</span>
       </div>
-      <input type="checkbox" data-classe="SEM-Oculos" onchange="atualizar()">
-      <div class="switch"></div>
-    </label>
-
-    <label class="toggle-row" style="--accent: var(--muted)">
-      <div class="toggle-info">
-        <div class="color-dot" style="background:var(--muted)"></div>
-        <span class="toggle-label">Maquinário</span>
-      </div>
-      <input type="checkbox" data-classe="Maquinario" onchange="atualizar()">
-      <div class="switch"></div>
-    </label>
-
-    <label class="toggle-row" style="--accent: var(--muted)">
-      <div class="toggle-info">
-        <div class="color-dot" style="background:var(--muted)"></div>
-        <span class="toggle-label">Veículo</span>
-      </div>
-      <input type="checkbox" data-classe="Veiculo" onchange="atualizar()">
+      <input type="checkbox" data-classe="SEM-Oculos de Protecao" onchange="atualizar()">
       <div class="switch"></div>
     </label>
   </div>
@@ -836,7 +768,7 @@
 <script>
 let wsCliente     = null;
 let classesAtivas = new Set();
-let caixasAtivas  = false;
+let caixasAtivas  = true;
 let ultimasCaixas = [];
 let canvasBoxes   = null;
 let ctxBoxes      = null;
@@ -851,6 +783,8 @@ let inferenciaTimer = null;
 let canvasInferencia = document.createElement('canvas');
 let ultimoAlertaLocal = new Map();
 let modeloOculosDisponivel = true;
+let confGeralConfig = 0.45;
+let confiancasConfig = {};
 
 const MODELO_LOCAL_URL = '/modelos/best.onnx';
 const IMG_SIZE_LOCAL = 640;
@@ -859,7 +793,7 @@ const CLASSES_MODELO = [
   'SEM-Colete', 'Pessoa', 'Cone de Seguranca', 'Colete',
   'Maquinario', 'Veiculo',
 ];
-const CLASSES_OCULOS = ['Oculos de Protecao', 'SEM-Oculos'];
+const CLASSES_OCULOS = ['Oculos de Protecao', 'SEM-Oculos de Protecao'];
 
 function classeDisponivel(nome) {
   return modeloOculosDisponivel || !CLASSES_OCULOS.includes(nome);
@@ -1184,18 +1118,14 @@ const CORES_PRESET = [
 ];
 
 const CLASSES_EDITOR = [
-  { nome:'SEM-Capacete',      label:'Sem Capacete',      cor:'#C73C3C', acc:'var(--red)'        },
-  { nome:'SEM-Mascara',       label:'Sem Máscara',        cor:'#C73C3C', acc:'var(--red)'        },
-  { nome:'SEM-Colete',        label:'Sem Colete',         cor:'#C73C3C', acc:'var(--red)'        },
   { nome:'Capacete',          label:'Capacete',           cor:'#22c55e', acc:'var(--green)'      },
   { nome:'Mascara',           label:'Máscara',            cor:'#22c55e', acc:'var(--green)'      },
   { nome:'Colete',            label:'Colete',             cor:'#22c55e', acc:'var(--green)'      },
   { nome:'Oculos de Protecao',label:'Óculos de Proteção', cor:'#22c55e', acc:'var(--green)'      },
-  { nome:'SEM-Oculos',        label:'Sem Óculos de Proteção', cor:'#C73C3C', acc:'var(--red)'    },
-  { nome:'Pessoa',            label:'Pessoa',             cor:'#ffd60a', acc:'var(--yellow)'     },
-  { nome:'Cone de Seguranca', label:'Cone de Segurança',  cor:'#1D4ED8', acc:'var(--blue-light)' },
-  { nome:'Maquinario',        label:'Maquinário',         cor:'#A0A0A0', acc:'var(--muted)'      },
-  { nome:'Veiculo',           label:'Veículo',            cor:'#A0A0A0', acc:'var(--muted)'      },
+  { nome:'SEM-Capacete',      label:'Sem Capacete',      cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'SEM-Mascara',       label:'Sem Máscara',        cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'SEM-Colete',        label:'Sem Colete',         cor:'#C73C3C', acc:'var(--red)'        },
+  { nome:'SEM-Oculos de Protecao', label:'Sem Óculos de Proteção', cor:'#C73C3C', acc:'var(--red)' },
 ];
 
 // ─── inicializa swatches de cor ───────────────────────────────────────────
@@ -1590,7 +1520,7 @@ new ResizeObserver(() => {
 function corCaixa(nome) {
   if (nome.startsWith('SEM-')) return '#C73C3C';
   if (['Capacete','Mascara','Colete','Oculos de Protecao'].includes(nome)) return '#22c55e';
-  if (nome === 'SEM-Oculos') return '#C73C3C';
+  if (nome === 'SEM-Oculos de Protecao') return '#C73C3C';
   return '#A0A0A0';
 }
 
@@ -1692,8 +1622,6 @@ function deteccoesDaSaidaLocal(output) {
   const canais = dims[1];
   const total = dims[2];
   const dets = [];
-  const confGeral = parseInt(document.getElementById('slider-conf').value) / 100;
-  const confAlerta = parseInt(document.getElementById('slider-conf-alerta').value) / 100;
 
   for (let i = 0; i < total; i++) {
     const cx = dados[i];
@@ -1712,7 +1640,7 @@ function deteccoesDaSaidaLocal(output) {
     }
 
     const nome = CLASSES_MODELO[melhorClasse];
-    const limiar = nome && nome.startsWith('SEM-') ? confAlerta : confGeral;
+    const limiar = nome ? (confiancasConfig[nome] ?? confGeralConfig) : 1;
     if (!nome || melhorScore < limiar) continue;
 
     dets.push({
@@ -1820,43 +1748,6 @@ async function iniciarInferenciaLocal() {
   }
 }
 
-// ─── Limiar de confiança ──────────────────────────────────────────────────
-(function initLimiar() {
-  const sliderConf      = document.getElementById('slider-conf');
-  const sliderConfAlerta = document.getElementById('slider-conf-alerta');
-  const valConf         = document.getElementById('val-conf');
-  const valConfAlerta   = document.getElementById('val-conf-alerta');
-
-  const savedConf      = localStorage.getItem('epi_conf');
-  const savedConfAlerta = localStorage.getItem('epi_conf_alerta');
-
-  if (savedConf      !== null) { sliderConf.value      = Math.round(savedConf * 100);      valConf.textContent      = Math.round(savedConf * 100)      + '%'; }
-  if (savedConfAlerta !== null) { sliderConfAlerta.value = Math.round(savedConfAlerta * 100); valConfAlerta.textContent = Math.round(savedConfAlerta * 100) + '%'; }
-
-  function enviarLimiar() {
-    if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
-    wsCliente.send(JSON.stringify({
-      tipo:        'confianca',
-      conf:        parseInt(sliderConf.value)      / 100,
-      conf_alerta: parseInt(sliderConfAlerta.value) / 100,
-    }));
-  }
-
-  sliderConf.addEventListener('input', () => {
-    valConf.textContent = sliderConf.value + '%';
-    localStorage.setItem('epi_conf', parseInt(sliderConf.value) / 100);
-    enviarLimiar();
-  });
-
-  sliderConfAlerta.addEventListener('input', () => {
-    valConfAlerta.textContent = sliderConfAlerta.value + '%';
-    localStorage.setItem('epi_conf_alerta', parseInt(sliderConfAlerta.value) / 100);
-    enviarLimiar();
-  });
-
-  window._enviarLimiar = enviarLimiar;
-})();
-
 // ─── WebSocket ────────────────────────────────────────────────────────────
 function enviarZonas() {
   if (!wsCliente || wsCliente.readyState !== WebSocket.OPEN) return;
@@ -1876,7 +1767,7 @@ function urlWebSocket() {
 
 function conectarWS() {
   wsCliente = new WebSocket(urlWebSocket());
-  wsCliente.onopen = () => { atualizar(); enviarZonas(); if (window._enviarLimiar) window._enviarLimiar(); enviarFrameCliente(); };
+  wsCliente.onopen = () => { atualizar(); enviarZonas(); enviarFrameCliente(); };
   wsCliente.onmessage = ({ data }) => {
     try {
       const ev = JSON.parse(data);
@@ -1899,6 +1790,8 @@ fetch('/api/config')
   .catch(() => ({ ws_port: 8765 }))
   .then(cfg => {
     aplicarDisponibilidadeModelos(cfg);
+    if (cfg.confianca_padrao != null) confGeralConfig  = cfg.confianca_padrao;
+    if (cfg.confiancas       != null) confiancasConfig = cfg.confiancas;
     atualizar();
     _wsPort = cfg.ws_port || 8765;
     conectarWS();

@@ -2,8 +2,17 @@
   "camera": 0,
   "http_port": 50061,
   "ws_port": 50062,
-  "confianca": 0.45,
-  "confianca_alerta": 0.70,
+  "confianca_padrao": 0.45,
+  "confiancas": {
+    "Capacete": 0.45,
+    "SEM-Capacete": 0.70,
+    "Mascara": 0.45,
+    "SEM-Mascara": 0.70,
+    "Colete": 0.45,
+    "SEM-Colete": 0.70,
+    "Oculos de Protecao": 0.45,
+    "SEM-Oculos de Protecao": 0.35
+  },
   "intervalo_min": 3.0,
   "log_manter_dias": 30,
   "capturas_manter_dias": 7
