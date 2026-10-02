@@ -1,0 +1,37 @@
+/* Capa i9: cena 3D autocontida. Os demais slides conservam seus estilos. */
+.cover{position:relative;isolation:isolate;overflow:hidden;min-height:calc(100svh - 145px);padding:76px 5vw 85px;background:#141415;justify-content:center}
+.cover::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 76% 44%,#46404242,transparent 60%),linear-gradient(105deg,#121213 25%,#191719 100%)}
+.cover-heading{position:relative;z-index:3;width:38%;max-width:530px;pointer-events:none}
+.cover-kicker{display:flex;align-items:center;gap:12px;font-size:10px!important;letter-spacing:.19em;text-transform:uppercase;color:#d6cbcc;margin-bottom:25px!important}
+.cover-kicker::before{content:"";width:26px;height:3px;background:#ff0008}
+.cover-heading h1{font-size:clamp(64px,7.5vw,120px);line-height:.92;letter-spacing:-.062em;font-weight:700;margin-bottom:27px;max-width:none}
+.cover-heading h1 span{display:block;color:#ff3037}
+.cover-heading .cover-lead{font-size:clamp(17px,1.5vw,23px);line-height:1.5;max-width:310px;color:#bdb7bb}
+.cover-heading .actions{margin-top:30px;pointer-events:auto}
+.cover-heading .primary{border-radius:8px;padding:16px 23px;background:#bf0001;border-color:#bf0001;display:inline-flex;align-items:center;gap:24px;font-size:14px}
+.cover-heading .primary:hover{background:#e00009;border-color:#e00009;box-shadow:0 8px 35px #bf00012b}
+.cover-heading .cover-foot{font:10px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.06em;color:#827c81;margin-top:20px}
+.diorama-panel{position:absolute;left:35%;right:-1%;top:18px;bottom:40px;z-index:1;outline:none}
+#diorama-canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y;outline:none}
+#diorama-canvas:active{cursor:grabbing}
+#diorama-canvas:focus-visible{outline:1px solid #e05258;outline-offset:-12px;border-radius:20px}
+.diorama-loading{position:absolute;left:45%;top:50%;font-size:12px;color:#ada4a8}
+.diorama-loading[hidden]{display:none}
+.diorama-label{position:absolute;right:4vw;top:22px;display:flex;align-items:center;gap:10px;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:#aea6aa;letter-spacing:.13em;z-index:2;pointer-events:none}
+.diorama-label i{width:6px;height:6px;border-radius:50%;background:#ff3037;box-shadow:0 0 13px #ff000833}
+.diorama-controls{position:absolute;right:4vw;bottom:20px;display:flex;align-items:center;gap:8px;z-index:4}
+.diorama-controls button{display:grid;place-items:center;padding:9px;border-color:#ffffff16;border-radius:50%;background:#ffffff04;color:#b9b2b7;width:33px;height:33px}
+.diorama-controls button:hover{background:#ffffff0d;color:#fff;border-color:#ffffff35}
+.diorama-controls svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6}
+.diorama-controls .diorama-hint{font-size:10px;color:#8e868c;margin-right:12px}
+.cover-bottom{position:absolute;bottom:28px;left:5vw;z-index:3;display:flex;align-items:center;gap:16px;max-width:45%}
+.cover-edition{font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:#c8bec3;letter-spacing:.1em}
+.cover-bottom .cover-rule{width:38px;height:1px;background:#5b3a3e}
+.cover-bottom .cover-topic{font-size:10px;color:#8c848a}
+.diorama-fallback{display:none;width:100%;height:100%;object-fit:contain}
+.diorama-panel.no-webgl .diorama-fallback{display:block}.diorama-panel.no-webgl canvas{display:none}
+@media(min-width:1700px){.cover{padding-left:7vw}.cover-bottom{left:7vw}}
+@media(max-width:1000px) and (min-width:801px){.cover-heading h1{font-size:68px}.cover-heading .cover-lead{font-size:18px;max-width:255px}.diorama-panel{left:32%;right:-7%}.cover-bottom{max-width:60%}.diorama-controls .diorama-hint{display:none}}
+@media(max-width:800px){.cover{min-height:910px;padding:65px 7vw 440px;justify-content:flex-start}.cover-heading{width:100%;max-width:520px}.cover-heading h1{font-size:clamp(64px,13vw,98px);margin-bottom:20px}.cover-kicker{font-size:9px!important;margin-bottom:20px!important}.cover-heading .cover-lead{font-size:18px;max-width:360px}.cover-heading .actions{margin-top:24px}.cover-heading .cover-foot{display:none}.diorama-panel{left:-6%;right:-6%;top:auto;bottom:65px;height:390px}.diorama-label{top:auto;bottom:450px;right:7vw;font-size:8px}.diorama-controls{right:7vw;bottom:22px}.diorama-controls .diorama-hint{display:none}.cover-bottom{left:7vw;bottom:31px;max-width:55%}.cover-topic,.cover-rule{display:none!important}.cover-edition{font-size:8px}}
+@media(prefers-reduced-motion:reduce){#scene-pause{display:none}}
+@media print{.cover{background:#fff;padding:10mm;min-height:0}.cover::before,.diorama-label,.diorama-controls,.cover-bottom{display:none!important}.cover-heading{width:45%}.cover-heading h1{font-size:54pt}.cover-heading h1 span{color:#bf0001}.cover-heading .cover-lead,.cover-kicker{color:#1b1818}.diorama-panel{left:42%;top:0;bottom:0}.diorama-panel canvas{display:none}.diorama-fallback{display:block}}

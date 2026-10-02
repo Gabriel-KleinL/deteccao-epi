@@ -1,8 +1,6 @@
-path: /Users/gabrielkleinlima/Programando/deteccao-epi/dados/dataset_oculos
-
-train: train/images
-val:   val/images
-test:  test/images
+train: dataset_oculos/train/images
+val:   dataset_oculos/val/images
+test:  dataset_oculos/test/images
 
 nc: 2
 names:

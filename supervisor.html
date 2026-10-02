@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Supervisor EPI — i9 Automação</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>i9 · Supervisor de EPIs</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -457,12 +455,12 @@
     letter-spacing: 0.1em;
   }
 </style>
+<link rel="stylesheet" href="recursos/identidade-i9/sistema.css">
 </head>
-<body>
+<body class="i9-supervisor">
 
 <header>
-  <div class="dot"></div>
-  <span class="logo">i9 Automação — Supervisor EPI</span>
+  <div class="i9-brand"><img src="data:image/png;base64,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" alt="i9 Engenharia e Tecnologia"><div class="i9-brand-copy"><strong>Monitoramento de EPIs</strong><span>Painel do supervisor</span></div></div>
   <div class="header-right">
     <span class="ts" id="ts">--:--:--</span>
     <button class="btn-mute" id="btn-mute" onclick="toggleMute()" title="Silenciar / ativar alertas sonoros">🔔</button>
@@ -472,6 +470,7 @@
     <a href="interface.html" class="btn-voltar">← CÂMERA</a>
   </div>
 </header>
+<div class="workspace-heading"><p>VISÃO COMPUTACIONAL / SEGURANÇA</p><h1>Visão geral da operação</h1><span>Acompanhe as detecções, os alertas e os registros do ambiente.</span></div>
 
 <!-- STATUS PRINCIPAL -->
 <div class="status-banner seguro" id="banner">
@@ -709,7 +708,7 @@ function addLog(tipo, camera, msg, confianca, zona) {
       ${msg}
       <span class="log-badge">${badgeTexto}</span>
     </span>
-    <span class="log-conf">${confianca ? confianca + '%' : ''}<br><small style="color:var(--muted);font-size:9px">${zonaTexto}</small></span>
+    <span class="log-conf"><small style="color:var(--muted);font-size:9px">${zonaTexto}</small></span>
   `;
 
   if (filtroAtivo !== 'todos' && tipo !== filtroAtivo) {

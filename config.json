@@ -14,6 +14,9 @@
     "SEM-Oculos de Protecao": 0.35
   },
   "intervalo_min": 3.0,
+  "fps_deteccao": 4.0,
+  "fps_stream": 10.0,
+  "stream_max_width": 1280,
   "log_manter_dias": 30,
   "capturas_manter_dias": 7
 }

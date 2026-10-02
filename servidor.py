@@ -85,6 +85,23 @@ _cap_global = None
 _ultimo_frame_jpg: bytes = b""
 _frame_lock = threading.Lock()
 
+
+def _atualizar_stream(frame):
+    """Atualiza o JPEG exibido na página sem executar os modelos."""
+    altura, largura = frame.shape[:2]
+    if largura > STREAM_MAX_WIDTH:
+        escala = STREAM_MAX_WIDTH / largura
+        frame = cv2.resize(
+            frame,
+            (STREAM_MAX_WIDTH, max(1, round(altura * escala))),
+            interpolation=cv2.INTER_AREA,
+        )
+    ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+    if ok:
+        with _frame_lock:
+            global _ultimo_frame_jpg
+            _ultimo_frame_jpg = jpg.tobytes()
+
 # ─── zona ────────────────────────────────────────────────────────────────────
 zonas: list[dict] = []
 
@@ -132,18 +149,36 @@ MODELO_EPI       = BASE / "modelos/best.pt"
 MODELO_OCULOS    = BASE / "modelos/oculos.pt"
 HTTP_PORT        = int(os.environ.get("PORT", _cfg.get("http_port", 8080)))
 WS_PORT          = int(os.environ.get("WS_PORT", _cfg.get("ws_port", 8765)))
+BIND_HOST        = os.environ.get("BIND_HOST", "0.0.0.0")
+CAMERA_SERVIDOR  = os.environ.get("CAMERA_SERVIDOR", "1").lower() not in {"0", "false", "nao", "não"}
 CONFIANCA_PADRAO = float(_cfg.get("confianca_padrao", 0.45))
 CONFIANCAS       = {k: float(v) for k, v in _cfg.get("confiancas", {}).items()}
+FPS_DETECCAO     = max(1.0, float(_cfg.get("fps_deteccao", 4.0)))
+FPS_STREAM       = max(1.0, min(15.0, float(_cfg.get("fps_stream", 8.0))))
+STREAM_MAX_WIDTH = max(640, int(_cfg.get("stream_max_width", 1280)))
 CAMERA_IDX       = int(sys.argv[1]) if len(sys.argv) > 1 else int(_cfg.get("camera", 0))
 _LOG_DIAS        = int(_cfg.get("log_manter_dias",      30))
 _CAPTURAS_DIAS   = int(_cfg.get("capturas_manter_dias",  7))
 
-CLASSES_EPI = [
-    "Capacete", "Mascara", "SEM-Capacete", "SEM-Mascara",
-    "SEM-Colete", "Pessoa", "Cone de Seguranca", "Colete",
-    "Maquinario", "Veiculo",
-]
-CLASSES_OCULOS = ["Oculos de Protecao", "SEM-Oculos de Protecao"]
+MAPA_CLASSES_EPI = {
+    "Hardhat": "Capacete",
+    "Mask": "Mascara",
+    "NO-Hardhat": "SEM-Capacete",
+    "NO-Mask": "SEM-Mascara",
+    "NO-Safety Vest": "SEM-Colete",
+    "Person": "Pessoa",
+    "Safety Cone": "Cone de Seguranca",
+    "Safety Vest": "Colete",
+    "machinery": "Maquinario",
+    "vehicle": "Veiculo",
+}
+MAPA_CLASSES_OCULOS = {
+    "Oculos de Protecao": "Oculos de Protecao",
+    "SEM-Oculos": "SEM-Oculos de Protecao",
+    "SEM-Oculos de Protecao": "SEM-Oculos de Protecao",
+}
+CLASSES_EPI = list(MAPA_CLASSES_EPI.values())
+CLASSES_OCULOS = list(dict.fromkeys(MAPA_CLASSES_OCULOS.values()))
 
 ALERTAS = {"SEM-Capacete", "SEM-Mascara", "SEM-Colete", "SEM-Oculos de Protecao"}
 AVISOS  = set()
@@ -176,12 +211,20 @@ async def obter_modelos():
             if not Path(MODELO_EPI).exists():
                 raise FileNotFoundError(f"Modelo não encontrado: {MODELO_EPI}")
             _modelo_epi = YOLO(MODELO_EPI)
+            print(f"[YOLO] Modelo EPI carregado: {MODELO_EPI.name}")
             if Path(MODELO_OCULOS).exists():
                 _modelo_oculos = YOLO(MODELO_OCULOS)
+                print(f"[YOLO] Modelo de óculos carregado: {MODELO_OCULOS.name}")
             else:
                 print(f"[YOLO] Modelo de óculos ausente: {MODELO_OCULOS}")
-            print("[YOLO] Modelo EPI carregado.")
     return _modelo_epi, _modelo_oculos
+
+
+def _nome_classe_modelo(modelo, indice: int) -> str:
+    nomes = modelo.names
+    if isinstance(nomes, dict):
+        return str(nomes.get(indice, ""))
+    return str(nomes[indice]) if 0 <= indice < len(nomes) else ""
 
 
 async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool = True):
@@ -189,11 +232,7 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
     modelo_epi, modelo_oculos = await obter_modelos()
 
     if atualizar_stream:
-        ok, _jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
-        if ok:
-            with _frame_lock:
-                global _ultimo_frame_jpg
-                _ultimo_frame_jpg = _jpg.tobytes()
+        _atualizar_stream(frame)
 
     agora = time.time()
     caixas_frame: list[dict] = []
@@ -220,10 +259,11 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
         for r in modelo_epi(frame, conf=_CONF_MODELO_EPI, verbose=False):
             for caixa in r.boxes:
                 cls = int(caixa.cls[0])
-                if cls < 0 or cls >= len(CLASSES_EPI):
+                nome_origem = _nome_classe_modelo(modelo_epi, cls)
+                nome = MAPA_CLASSES_EPI.get(nome_origem)
+                if nome is None:
                     continue
                 conf = float(caixa.conf[0])
-                nome = CLASSES_EPI[cls]
                 x1, y1, x2, y2 = caixa.xyxyn[0].tolist()
                 bbox = [round(x1, 4), round(y1, 4), round(x2, 4), round(y2, 4)]
                 processar_deteccao(nome, conf, bbox)
@@ -235,10 +275,11 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
             for r in modelo_oculos(frame, conf=_CONF_MODELO_OCULOS, agnostic_nms=True, iou=0.3, verbose=False):
                 for caixa in r.boxes:
                     cls = int(caixa.cls[0])
-                    if cls < 0 or cls >= len(CLASSES_OCULOS):
+                    nome_origem = _nome_classe_modelo(modelo_oculos, cls)
+                    nome = MAPA_CLASSES_OCULOS.get(nome_origem)
+                    if nome is None:
                         continue
                     conf = float(caixa.conf[0])
-                    nome = CLASSES_OCULOS[cls]
                     x1, y1, x2, y2 = caixa.xyxyn[0].tolist()
                     bbox = [round(x1, 4), round(y1, 4), round(x2, 4), round(y2, 4)]
                     processar_deteccao(nome, conf, bbox)
@@ -248,14 +289,16 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
     caixas_visiveis = [c for c in caixas_frame if bbox_visivel(c["bbox"])]
     await broadcast({"tipo": "frame", "caixas": caixas_visiveis})
 
-    tem_alerta = False
+    # A infração continua ativa mesmo durante o cooldown de notificações.
+    # Antes, o ``continue`` abaixo podia deixar tem_alerta=False e emitir um
+    # evento "seguro" contraditório no mesmo período.
+    tem_alerta = any(nome in ALERTAS for nome, *_ in detectados)
     for nome, conf, zona_nome, zona_id, zona_cor in detectados:
         chave = (nome, zona_id)
         if agora - _ultimo_envio.get(chave, 0) < intervalo_min:
             continue
 
         if nome in ALERTAS:
-            tem_alerta = True
             ev_alerta = {
                 "tipo":      "alerta",
                 "camera":    origem,
@@ -312,12 +355,30 @@ async def processar_frame(frame, origem: str = "CAM 01", atualizar_stream: bool 
             print(f"[SEGURO] {' + '.join(epi_ok[:3])}")
 
 
+async def processar_frame_cliente(dados: bytes):
+    """Decodifica um JPEG binário do navegador sem a cópia extra de Base64."""
+    global _ultimo_frame_browser
+    agora = time.time()
+    if agora - _ultimo_frame_browser < 0.35:
+        return
+    _ultimo_frame_browser = agora
+
+    arr = np.frombuffer(dados, dtype=np.uint8)
+    frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if frame is not None:
+        await processar_frame(frame, origem="NAVEGADOR", atualizar_stream=False)
+
+
 async def registrar(websocket):
     clientes.add(websocket)
     print(f"[WS]  Cliente conectado    ({len(clientes)} ativo(s))")
     try:
         async for msg in websocket:
             try:
+                if isinstance(msg, bytes):
+                    await processar_frame_cliente(msg)
+                    continue
+
                 ev = json.loads(msg)
 
                 if ev.get("tipo") == "zonas":
@@ -337,21 +398,11 @@ async def registrar(websocket):
                     print(f"[CFG]  Intervalo de alertas: {intervalo_min}s")
 
                 elif ev.get("tipo") == "frame_cliente":
-                    global _ultimo_frame_browser
-                    agora = time.time()
-                    if agora - _ultimo_frame_browser < 0.35:
-                        continue
-                    _ultimo_frame_browser = agora
-
                     imagem = ev.get("imagem", "")
                     if "," in imagem:
                         imagem = imagem.split(",", 1)[1]
                     dados = base64.b64decode(imagem, validate=True)
-                    arr = np.frombuffer(dados, dtype=np.uint8)
-                    frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-                    if frame is None:
-                        continue
-                    await processar_frame(frame, origem="NAVEGADOR", atualizar_stream=False)
+                    await processar_frame_cliente(dados)
 
                 elif ev.get("tipo") == "evento_cliente":
                     evento = ev.get("evento", {})
@@ -422,6 +473,7 @@ class HandlerSilencioso(SimpleHTTPRequestHandler):
             corpo = json.dumps({
                 "ws_port": WS_PORT,
                 "http_port": HTTP_PORT,
+                "camera_servidor": CAMERA_SERVIDOR,
                 "modelo_oculos": Path(MODELO_OCULOS).exists(),
                 "confianca_padrao": CONFIANCA_PADRAO,
                 "confiancas": CONFIANCAS,
@@ -442,7 +494,7 @@ class HandlerSilencioso(SimpleHTTPRequestHandler):
             self.wfile.write(corpo)
         elif self.path == '/stream':
             self.send_response(200)
-            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=--jpgboundary")
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=jpgboundary")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
             try:
@@ -457,7 +509,7 @@ class HandlerSilencioso(SimpleHTTPRequestHandler):
                         )
                         self.wfile.write(header + jpg + b"\r\n")
                         self.wfile.flush()
-                    time.sleep(0.1)
+                    time.sleep(1.0 / FPS_STREAM)
             except Exception:
                 pass
         else:
@@ -468,7 +520,7 @@ class HandlerSilencioso(SimpleHTTPRequestHandler):
 
 def iniciar_http():
     os.chdir(BASE)
-    servidor = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), HandlerSilencioso)
+    servidor = ThreadingHTTPServer((BIND_HOST, HTTP_PORT), HandlerSilencioso)
     ip = _lan_ip()
     print(f"[HTTP] Local:  http://localhost:{HTTP_PORT}")
     print(f"[HTTP] Rede:   http://{ip}:{HTTP_PORT}")
@@ -515,11 +567,9 @@ async def loop_deteccao():
     _cap_global = cap
     print(f"[CAM] Câmera {CAMERA_IDX} aberta. Iniciando detecção...")
 
-    ultimo_envio:  dict[tuple, float] = {}  # chave: (nome, zona_id)
-    ultimo_seguro    = 0.0
-    INTERVALO_SEGURO = 10.0
-    ultimo_frame_ws  = 0.0
-    INTERVALO_FRAME  = 0.1
+    ultimo_stream = 0.0
+    ultimo_inferencia = 0.0
+    intervalo_inferencia = 1.0 / FPS_DETECCAO
     falhas_consecutivas = 0
 
     while True:
@@ -543,9 +593,20 @@ async def loop_deteccao():
             continue
         falhas_consecutivas = 0
 
-        await processar_frame(frame, origem=f"CAM 0{CAMERA_IDX + 1}")
+        agora = time.monotonic()
+        if agora - ultimo_stream >= 1.0 / FPS_STREAM:
+            _atualizar_stream(frame)
+            ultimo_stream = agora
 
-        await asyncio.sleep(0.05)
+        if agora - ultimo_inferencia >= intervalo_inferencia:
+            ultimo_inferencia = agora
+            await processar_frame(
+                frame,
+                origem=f"CAM 0{CAMERA_IDX + 1}",
+                atualizar_stream=False,
+            )
+
+        await asyncio.sleep(0.02)
 
     cap.release()
 
@@ -560,8 +621,12 @@ async def main():
     print(f"[WS]  Local:  ws://localhost:{WS_PORT}")
     print(f"[WS]  Rede:   ws://{ip}:{WS_PORT}")
 
-    async with websockets.serve(registrar, "0.0.0.0", WS_PORT):
-        await loop_deteccao()
+    async with websockets.serve(registrar, BIND_HOST, WS_PORT):
+        if CAMERA_SERVIDOR:
+            await loop_deteccao()
+        else:
+            print("[CAM] Modo navegador: aguardando imagens da webcam do usuário.")
+            await asyncio.Future()
 
 _encerrado = False
 
@@ -586,8 +651,9 @@ if __name__ == "__main__":
     print("=" * 48)
     print("  Sistema EPI — i9 Automação")
     print("=" * 48)
-    limpar_logs_antigos(_LOG_DIAS)
-    limpar_capturas_antigas(_CAPTURAS_DIAS)
+    if os.environ.get("PRESERVAR_HISTORICO") != "1":
+        limpar_logs_antigos(_LOG_DIAS)
+        limpar_capturas_antigas(_CAPTURAS_DIAS)
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):

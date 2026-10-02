@@ -1,0 +1,110 @@
+/* Identidade i9 · Engenharia e Tecnologia. Estados operacionais mantêm suas cores. */
+:root {
+  color-scheme: dark;
+  --bg: #121212;
+  --surface: #1B1818;
+  --card: #252122;
+  --border: #3B3333;
+  --primary: #FF0008;
+  --primary-dark: #BF0001;
+  --primary-light: #FF8589;
+  --red-bg: rgb(191 0 1 / 12%);
+  --text: #FFFFFF;
+  --muted: #BDB8B8;
+  --sans: Arial, Helvetica, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+body {font-family: var(--sans); background: var(--bg);}
+header {
+  min-height: 76px;
+  height: auto;
+  padding: 14px 28px;
+  gap: 24px;
+  background: #171515;
+  border-bottom: 1px solid var(--border);
+  box-shadow: inset 0 3px var(--primary-dark);
+}
+.i9-brand {display: flex; align-items: center; gap: 20px; flex-shrink: 0;}
+.i9-brand img {display: block; width: 85px; height: auto;}
+.i9-brand-copy {display: grid; gap: 6px; padding-left: 20px; border-left: 1px solid #4C3939;}
+.i9-brand-copy strong {font-size: 15px; font-weight: 700; letter-spacing: -.02em; color: white;}
+.i9-brand-copy span {font-size: 9px; font-weight: 600; letter-spacing: .13em; color: #B8AAAA; text-transform: uppercase;}
+.status-bar,.header-right {gap: 15px; flex-wrap: wrap; justify-content: flex-end;}
+.status-bar,.ts {font-size: 11px;}
+.status-bar .val,.ts {color: #D7CBCB;}
+button,input,select,a {font-family: inherit;}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {outline: 2px solid #FF9296; outline-offset: 4px;}
+.system-nav-link,.btn-voltar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  color: #F3E9E9; background: #282020; border: 1px solid #654040;
+  padding: 10px 14px; border-radius: 7px; text-decoration: none;
+  font: 600 11px var(--sans); letter-spacing: .025em; min-height: 36px;
+  transition: background .15s, border-color .15s;
+}
+.system-nav-link:hover,.btn-voltar:hover {background: #3A2121; border-color: #D4575A; color: white;}
+/* A câmera conserva a área do vídeo e os controles existentes. */
+.i9-camera {height: 100svh; grid-template-rows: 76px minmax(0,1fr); grid-template-columns: minmax(0,1fr) 330px;}
+.i9-camera .camera-area {min-width: 0; min-height: 0;}
+.i9-camera .cam-off {background: radial-gradient(ellipse at 50% 42%,#2A1B1D 0,transparent 58%),#131212; gap: 15px; padding: 26px;}
+.i9-camera .cam-off>svg {width: 65px; height: 65px; padding: 14px; border: 1px solid #743C41; border-radius: 17px; color: #FF8589; stroke: currentColor; background: #311C20; opacity: 1; margin-bottom: 5px;}
+.i9-camera .cam-off>p:first-of-type {font: 700 23px var(--sans); letter-spacing: -.03em; color: #FAEFEF;}
+.i9-camera .cam-off #camera-status {font: 14px/1.5 var(--sans); letter-spacing: 0; color: #BDB0B0;}
+.i9-camera .btn-cam {width: min(320px,86%); min-height: 42px; margin-top: 0; border-radius: 8px; font: 600 12px var(--sans); letter-spacing: .02em; border-color: #6B3B3E; color: #F5CCCC; background: #231B1C;}
+.i9-camera .btn-cam:hover {background: #392125; border-color: #BF5258;}
+.i9-camera #btn-start {background: var(--primary-dark); border-color: #E2383E; color: white;}
+.i9-camera #btn-start:hover {background: #DB0010;}
+.i9-camera .camera-select {padding: 11px 12px; min-height: 40px; border-radius: 7px; font: 12px var(--sans); letter-spacing: 0; background: #1B1718;}
+.i9-camera .panel {padding: 24px 19px; gap: 20px; background: #1A1718;}
+.i9-camera .section-title {font: 700 10px var(--sans); letter-spacing: .12em; color: #D2C1C1; padding-bottom: 11px; margin-bottom: 12px; display: flex; align-items: center; gap: 9px;}
+.i9-camera .section-title::before {content: ''; width: 4px; height: 10px; background: var(--primary-dark); border-radius: 2px;}
+.i9-camera .btn-zona {font: 600 10px/1.35 var(--sans); letter-spacing: .015em; min-height: 34px; border-radius: 6px; padding: 7px 8px;}
+.i9-camera .btn-zona:hover,.i9-camera .zona-item-btn:hover {color: #FFADB0; border-color: #9A4A50;}
+.i9-camera .btn-zona.ativo {background: #3A2023; border-color: #8F3F45; color: #FFADB0;}
+.i9-camera .ze-box {border-radius: 10px; padding: 13px; background: #272021;}
+.i9-camera .ze-input {font: 12px var(--sans); padding: 9px 10px; border-radius: 6px;}
+.i9-camera .modo-zona {border-radius: 6px;}
+.i9-camera .modo-btn {font: 600 10px var(--sans); padding: 9px;}
+.i9-camera .modo-btn.selecionado {background: var(--primary-dark);}
+.i9-camera .zona-item {padding: 10px; border-radius: 7px; background: #252021;}
+.i9-camera .toggle-label {font-size: 13px; color: #EAE1E1;}
+.i9-camera .toggle-row {padding-top: 7px; padding-bottom: 7px;}
+.i9-camera .cam-label {color: #FFB0B2;}
+.i9-camera .scanlines {opacity: .4;}
+/* Supervisor: mesma marca, mais hierarquia entre contexto, indicadores e registros. */
+.i9-supervisor {min-height: 100svh; background: radial-gradient(ellipse at 92% 0,#32191C55,transparent 40%),#121212;}
+.workspace-heading {padding: 27px 28px 0; display: grid; gap: 8px;}
+.workspace-heading>p {font-size: 10px; letter-spacing: .14em; font-weight: 700; color: #FF8589;}
+.workspace-heading h1 {font-size: 29px; letter-spacing: -.04em; font-weight: 700; line-height: 1.15;}
+.workspace-heading>span {font-size: 13px; color: var(--muted); line-height: 1.5;}
+.i9-supervisor .status-banner {margin: 22px 28px 0; padding: 22px 25px; border-radius: 12px;}
+.i9-supervisor .status-titulo {font-size: 24px; letter-spacing: -.02em;}
+.i9-supervisor .status-sub {line-height: 1.5; margin-top: 3px; font-size: 13px;}
+.i9-supervisor .status-direita {font-size: 10px; padding-left: 20px;}
+.i9-supervisor .stats {grid-template-columns: repeat(4,minmax(0,1fr)); padding: 18px 28px; gap: 14px;}
+.i9-supervisor .stat-card {background: #201B1C; border-radius: 10px; padding: 18px 20px; gap: 13px;}
+.i9-supervisor .stat-label {font: 600 10px var(--sans); letter-spacing: .075em;}
+.i9-supervisor .stat-valor {font-size: 34px; letter-spacing: -.04em; font-variant-numeric: tabular-nums;}
+.i9-supervisor .log-section {padding: 0 28px 28px;}
+.i9-supervisor .log-toolbar {flex-wrap: wrap; gap: 8px; padding: 15px 0;}
+.i9-supervisor .log-title {font: 700 10px var(--sans); color: #D6C6C6;}
+.i9-supervisor .filtro-btn,.i9-supervisor .btn-limpar-log,.i9-supervisor .btn-intervalo {font: 600 10px var(--sans); padding: 8px 11px; border-radius: 6px; min-height: 32px;}
+.i9-supervisor .filtro-btn.ativo {background: var(--primary-dark); border-color: #D8383D; color: white;}
+.i9-supervisor .duracao-group {flex-wrap: wrap; gap: 7px;}
+.i9-supervisor .log-vazio {min-height: 145px; font: 13px var(--sans); letter-spacing: 0; color: #A99797; background: #1A1617; border: 1px dashed #443235; border-radius: 10px; margin-top: 15px;}
+.i9-supervisor .log-entry {border-radius: 8px; margin-bottom: 7px;}
+.i9-supervisor .capturas-section {margin-left: 28px; margin-right: 28px;}
+.i9-supervisor .captura-item img {border-radius: 7px;}
+.i9-supervisor #ws-status,.i9-supervisor #cam-status {font-size: 10px;}
+.i9-supervisor .header-right :is(#ws-status,#cam-status,.btn-voltar) {--primary: #FF8589;}
+@media (min-width:1600px) {.i9-camera{grid-template-columns:minmax(0,1fr) 360px;}.i9-camera .panel{padding:28px 24px;}}
+@media (max-width:1100px) {header{gap:18px;padding:14px 20px;}.i9-brand{gap:14px;}.i9-brand-copy{padding-left:14px;}.i9-brand-copy strong{font-size:13px;}.i9-brand-copy span{font-size:8px;}.status-bar,.header-right{gap:10px;}.header-right .ts{display:none;}.workspace-heading{padding:24px 20px 0;}.i9-supervisor .status-banner{margin:20px 20px 0;}.i9-supervisor .stats{padding:16px 20px;}.i9-supervisor .log-section{padding:0 20px 22px;}}
+@media (max-width:800px) {
+  header{flex-wrap:wrap;gap:15px;padding:17px 20px;}.i9-brand img{width:73px;}.i9-brand-copy strong{font-size:14px;}.i9-brand-copy span{font-size:8px;}
+  .status-bar,.header-right{width:100%;justify-content:flex-start;gap:12px;margin-left:0;}
+  .i9-camera{display:flex;flex-direction:column;height:auto;min-height:100svh;overflow:auto;}.i9-camera .camera-area{height:60svh;min-height:390px;flex-shrink:0;}.i9-camera .panel{overflow:visible;border-left:0;border-top:1px solid var(--border);padding:24px;}
+  .i9-camera .cam-off{padding:25px 10px;}.i9-camera .cam-off>p:first-of-type{font-size:22px;}.i9-camera .cam-off #camera-status{font-size:13px;}
+  .workspace-heading h1{font-size:25px;}.i9-supervisor .status-banner{padding:19px 16px;gap:15px;}.i9-supervisor .status-esquerda{gap:12px;}.i9-supervisor .status-icone{width:42px;height:42px;font-size:22px;}.i9-supervisor .status-titulo{font-size:20px;}.i9-supervisor .status-sub{font-size:12px;}.i9-supervisor .status-direita{font-size:9px;padding-left:0;}
+  .i9-supervisor .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}.i9-supervisor .stat-card{padding:16px;}.i9-supervisor .stat-valor{font-size:30px;}.i9-supervisor .duracao-group{margin-left:0;width:100%;margin-top:5px;}.i9-supervisor .log-toolbar{gap:7px;}.i9-supervisor .log-title{width:100%;margin-bottom:4px;}
+}
+@media (max-width:420px) {.i9-brand-copy span{letter-spacing:.07em;}.i9-supervisor .status-banner{align-items:flex-start;}.i9-supervisor .status-direita{display:none;}.header-right .btn-voltar{padding:8px 11px;}.i9-supervisor .stat-label{font-size:9px;}}
+@media (prefers-reduced-motion:reduce) {*,*::before,*::after{animation:none!important;transition:none!important;}}

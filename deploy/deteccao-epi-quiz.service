@@ -1,0 +1,20 @@
+[Unit]
+Description=i9 Quiz - De Olho
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/apps/deteccao-epi
+EnvironmentFile=/etc/deteccao-epi/quiz.env
+ExecStart=/usr/bin/python3 -u /srv/apps/deteccao-epi/quiz_servidor.py --bind 127.0.0.1 --port 50064 --public-url https://epi.in9automacao.com.br
+Restart=always
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/apps/deteccao-epi/saidas
+
+[Install]
+WantedBy=multi-user.target

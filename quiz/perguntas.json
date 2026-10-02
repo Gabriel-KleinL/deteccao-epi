@@ -1,0 +1,334 @@
+[
+  {
+    "question": "O que significa EPI?",
+    "options": [
+      "Equipamento de Proteção Individual",
+      "Equipe de Programação Inteligente",
+      "Estrutura de Prevenção Integrada",
+      "Equipamento de Produção Industrial"
+    ],
+    "correct": 0,
+    "explanation": "EPI significa Equipamento de Proteção Individual. Na apresentação, vimos capacete, colete, máscara e óculos de proteção."
+  },
+  {
+    "question": "Na foto, quantas pessoas estão com capacete?",
+    "image": true,
+    "options": [
+      "Uma",
+      "Duas",
+      "Três",
+      "Nenhuma"
+    ],
+    "correct": 2,
+    "explanation": "As três pessoas visíveis usam capacete: uma à frente e duas ao fundo."
+  },
+  {
+    "question": "Na foto, quantas pessoas estão usando colete?",
+    "image": true,
+    "options": [
+      "Três pessoas com colete",
+      "Uma com colete e duas sem colete",
+      "Duas com colete e uma sem colete",
+      "Nenhuma pessoa com colete"
+    ],
+    "correct": 1,
+    "explanation": "A pessoa à frente usa colete laranja. As duas ao fundo usam uniforme azul com faixas, sem colete."
+  },
+  {
+    "question": "Como um modelo de visão computacional aprende a reconhecer EPI?",
+    "options": [
+      "Decorando o nome de cada trabalhador",
+      "Adivinhando sem observar imagens",
+      "Recebendo apenas uma lista de regras escritas",
+      "Aprendendo padrões em imagens com rótulos"
+    ],
+    "correct": 3,
+    "explanation": "Imagens rotuladas mostram exemplos dos objetos e suas posições. O treinamento ajusta os parâmetros do modelo a partir dos erros."
+  },
+  {
+    "question": "Uma previsão tem 60% e o limiar é 70%. O que acontece?",
+    "options": [
+      "A detecção aparece",
+      "O sistema comprova segurança",
+      "A detecção é filtrada",
+      "A pontuação sobe para 70%"
+    ],
+    "correct": 2,
+    "explanation": "60% fica abaixo de 70%, então a previsão é filtrada. O limiar não muda a pontuação produzida pelo modelo."
+  },
+  {
+    "question": "Três capacetes têm pontuações de 94%, 81% e 72%. Com limiar de 80%, quantos aparecem?",
+    "options": [
+      "Uma",
+      "Duas",
+      "Três",
+      "Nenhuma"
+    ],
+    "correct": 1,
+    "explanation": "94% e 81% passam pelo filtro. A previsão de 72% fica abaixo de 80% e desaparece. Esses valores são simulados."
+  },
+  {
+    "question": "“SEM-Colete” tem pontuação de 65%. Se o limiar também é 65%, essa caixa aparece?",
+    "options": [
+      "Sim: pontuação igual ao limiar passa",
+      "Não: precisa ser maior que 65%",
+      "Só se a pessoa usar capacete",
+      "A pontuação muda para 100%"
+    ],
+    "correct": 0,
+    "explanation": "A regra é pontuação maior ou igual ao limiar. Portanto 65% passa por um limiar de 65%."
+  },
+  {
+    "question": "Óculos de grau devem contar automaticamente como óculos de proteção?",
+    "options": [
+      "Sim, porque têm lentes",
+      "Sim, se a pontuação for alta",
+      "Sim, quando a pessoa usa capacete",
+      "Não: é preciso distinguir proteção ocular adequada"
+    ],
+    "correct": 3,
+    "explanation": "Óculos de grau ou de sol não devem ser tratados automaticamente como EPI. O projeto precisa distinguir proteção ocular adequada."
+  },
+  {
+    "question": "Nenhum alerta na tela significa que o ambiente está seguro?",
+    "options": [
+      "Sim, a IA nunca deixa passar um problema",
+      "Não: a IA pode deixar de detectar um problema",
+      "Sim, se a câmera estiver ligada",
+      "Sim, se o limiar for 100%"
+    ],
+    "correct": 1,
+    "explanation": "O modelo pode falhar por pouca luz, partes escondidas e outras dificuldades. Ausência de alerta não comprova segurança."
+  },
+  {
+    "question": "Como testar melhor um modelo antes de usá-lo?",
+    "options": [
+      "Repetir só as imagens de treino",
+      "Escolher apenas imagens em que ele acerta",
+      "Usar cenas novas e avaliar também no ambiente real",
+      "Olhar apenas o número de épocas"
+    ],
+    "correct": 2,
+    "explanation": "Cenas separadas do treinamento ajudam a avaliar a generalização. O teste no ambiente real revela dificuldades da câmera e do local."
+  },
+  {
+    "question": "Qual problema deu origem ao projeto?",
+    "options": [
+      "A dificuldade de acompanhar o uso de EPI em uma cena que muda",
+      "A falta de uma lista de nomes dos trabalhadores",
+      "A necessidade de controlar o horário de entrada",
+      "A dificuldade de calcular o custo de uma obra"
+    ],
+    "correct": 0,
+    "explanation": "O projeto surgiu de uma dor em comum: acompanhar o uso de EPI enquanto pessoas entram, saem e mudam de posição. A solução ajuda a sinalizar possíveis ausências."
+  },
+  {
+    "question": "Qual é o principal papel do sistema?",
+    "options": [
+      "Garantir sozinho a segurança de toda a obra",
+      "Ajudar a identificar possíveis ausências de EPI nas imagens",
+      "Decidir quais equipamentos cada profissão deve usar",
+      "Substituir todas as inspeções presenciais"
+    ],
+    "correct": 1,
+    "explanation": "O sistema analisa imagens e chama a atenção para possíveis problemas. A avaliação das condições de trabalho continua dependendo de pessoas e dos procedimentos de segurança."
+  },
+  {
+    "question": "O que o modelo analisa para procurar os equipamentos?",
+    "options": [
+      "O cadastro de cada trabalhador",
+      "A lista de compras da obra",
+      "As imagens recebidas da câmera",
+      "O horário de trabalho da equipe"
+    ],
+    "correct": 2,
+    "explanation": "O modelo procura padrões visuais nas imagens da câmera. Ele não precisa descobrir o nome da pessoa para procurar um equipamento na cena."
+  },
+  {
+    "question": "O que significa uma caixa desenhada ao redor de um objeto?",
+    "options": [
+      "Que a pessoa foi identificada pelo nome",
+      "Que toda a cena está segura",
+      "Que o equipamento passou por uma inspeção física",
+      "Que o modelo localizou uma possível detecção naquela região"
+    ],
+    "correct": 3,
+    "explanation": "A caixa indica onde o modelo localizou algo que reconheceu. O nome da classe e a pontuação ajudam a interpretar a previsão, que ainda pode estar errada."
+  },
+  {
+    "question": "O que o aviso “SEM-Capacete” indica?",
+    "options": [
+      "Uma possível ausência de capacete que deve ser conferida",
+      "Que o capacete está fora do prazo de validade",
+      "Que a câmera parou de funcionar",
+      "Que nenhuma pessoa está na imagem"
+    ],
+    "correct": 0,
+    "explanation": "A classe SEM-Capacete sinaliza uma possível ausência. O aviso deve ser conferido, pois a posição da pessoa e as condições da imagem podem causar erros."
+  },
+  {
+    "question": "Uma pessoa fica atrás de outra. Como isso pode afetar a análise?",
+    "options": [
+      "O modelo passa a enxergar através dela",
+      "Parte do EPI pode ficar escondida e dificultar a detecção",
+      "A pontuação de todas as detecções aumenta",
+      "A câmera muda de posição automaticamente"
+    ],
+    "correct": 1,
+    "explanation": "Quando uma pessoa ou objeto cobre parte da cena, alguns detalhes deixam de ficar visíveis. Isso pode dificultar ou impedir o reconhecimento de um EPI."
+  },
+  {
+    "question": "Por que um local com pouca luz pode atrapalhar o modelo?",
+    "options": [
+      "Porque a luz altera o nome das classes",
+      "Porque o modelo deixa de ter acesso aos rótulos de treino",
+      "Porque os detalhes dos equipamentos ficam menos visíveis",
+      "Porque todas as previsões passam a ter a mesma pontuação"
+    ],
+    "correct": 2,
+    "explanation": "Com pouca luz, a imagem pode perder detalhes importantes. O modelo depende do que aparece na imagem e pode confundir objetos ou deixar de detectá-los."
+  },
+  {
+    "question": "O que pode acontecer quando uma pessoa está muito longe da câmera?",
+    "options": [
+      "O modelo reconhece melhor qualquer equipamento",
+      "A distância deixa de importar depois do treinamento",
+      "A imagem ganha mais detalhes automaticamente",
+      "Um EPI pequeno pode ficar difícil de reconhecer"
+    ],
+    "correct": 3,
+    "explanation": "À distância, equipamentos pequenos ocupam poucos pixels na imagem. Óculos, por exemplo, podem ficar difíceis de distinguir. Por isso, o posicionamento da câmera precisa ser avaliado."
+  },
+  {
+    "question": "Para que serve marcar uma área de interesse na imagem?",
+    "options": [
+      "Para concentrar o monitoramento na região definida",
+      "Para melhorar automaticamente a iluminação da cena",
+      "Para aumentar o tamanho real dos equipamentos",
+      "Para ensinar novas classes sem imagens de treino"
+    ],
+    "correct": 0,
+    "explanation": "A área de interesse delimita a região que deve ser considerada no monitoramento, conforme a configuração do sistema. Ela não melhora sozinha a qualidade das detecções."
+  },
+  {
+    "question": "É possível ensinar o projeto a reconhecer outros equipamentos?",
+    "options": [
+      "Sim, apenas mudando a cor das caixas",
+      "Sim, treinando modelos com exemplos rotulados dos novos equipamentos",
+      "Não, os modelos nunca podem ser atualizados",
+      "Sim, apenas escrevendo o nome do equipamento na tela"
+    ],
+    "correct": 1,
+    "explanation": "O projeto pode receber novos modelos treinados para outros equipamentos. Isso exige exemplos rotulados e avaliação dos resultados antes do uso."
+  },
+  {
+    "question": "O que é rotular uma imagem para o treinamento?",
+    "options": [
+      "Renomear o arquivo com a data da foto",
+      "Aumentar o brilho de todas as fotos",
+      "Escolher a cor da tela do sistema",
+      "Marcar quais objetos aparecem e onde estão"
+    ],
+    "correct": 3,
+    "explanation": "Na detecção de objetos, os rótulos indicam a classe e a posição de cada objeto. Esses exemplos orientam o aprendizado do modelo."
+  },
+  {
+    "question": "Por que usar imagens de ângulos e iluminações diferentes no treino?",
+    "options": [
+      "Para o modelo aprender com situações variadas",
+      "Para evitar qualquer teste depois do treinamento",
+      "Para todas as fotos ficarem com a mesma aparência",
+      "Para garantir que o modelo nunca erre"
+    ],
+    "correct": 0,
+    "explanation": "Exemplos variados ajudam o modelo a aprender como os equipamentos aparecem em diferentes condições. Mesmo assim, é preciso avaliar seu desempenho em cenas novas."
+  },
+  {
+    "question": "O modelo marca um boné como capacete. O que aconteceu?",
+    "options": [
+      "A pessoa ficou protegida por receber uma marcação",
+      "O modelo confundiu um objeto com outro",
+      "O boné virou uma nova classe automaticamente",
+      "A câmera confirmou que o equipamento é adequado"
+    ],
+    "correct": 1,
+    "explanation": "O modelo fez uma detecção incorreta: tratou um boné como capacete. Conferir esses erros ajuda a identificar exemplos que faltam no treinamento."
+  },
+  {
+    "question": "Há um capacete visível, mas o modelo não o marca. O que isso mostra?",
+    "options": [
+      "Que nenhum capacete está presente",
+      "Que a pessoa precisa sair da imagem",
+      "Que o modelo pode deixar de detectar um objeto presente",
+      "Que todas as outras detecções também estão erradas"
+    ],
+    "correct": 2,
+    "explanation": "Um objeto pode estar presente e não ser detectado. Esse tipo de falha precisa ser considerado ao avaliar o sistema; a tela não mostra necessariamente tudo o que existe na cena."
+  },
+  {
+    "question": "Qual é o próximo passo mais adequado ao receber um alerta?",
+    "options": [
+      "Aplicar uma punição automática sem conferir",
+      "Ignorar o alerta porque a IA pode errar",
+      "Tratar a pontuação como prova definitiva",
+      "Conferir a cena e seguir os procedimentos de segurança"
+    ],
+    "correct": 3,
+    "explanation": "O alerta ajuda a direcionar a atenção. Uma pessoa deve conferir a situação e tomar as medidas previstas para o local, considerando que a previsão pode estar incorreta."
+  },
+  {
+    "question": "O que acontece ao aumentar o limiar, mantendo as mesmas previsões?",
+    "options": [
+      "Menos previsões, ou a mesma quantidade, passam pelo filtro",
+      "A pontuação de cada previsão aumenta junto",
+      "O modelo aprende uma nova classe",
+      "Todas as detecções incorretas desaparecem"
+    ],
+    "correct": 0,
+    "explanation": "Um limiar maior exige pontuações mais altas para mostrar as previsões. Isso pode esconder tanto detecções incorretas quanto corretas; o ajuste não treina novamente o modelo."
+  },
+  {
+    "question": "Uma caixa mostra 90%. Como interpretar esse número?",
+    "options": [
+      "Como a porcentagem de pessoas seguras na obra",
+      "Como a pontuação daquela previsão, sem garantia de acerto",
+      "Como a vida útil restante do equipamento",
+      "Como o percentual de treinamento já concluído"
+    ],
+    "correct": 1,
+    "explanation": "O número é uma pontuação produzida pelo modelo para aquela previsão. Não é uma garantia de acerto nem uma medida de segurança do ambiente."
+  },
+  {
+    "question": "A câmera foi mudada de lugar. O que convém fazer?",
+    "options": [
+      "Assumir que os resultados serão idênticos",
+      "Usar o mesmo enquadramento na tela sem conferir a imagem",
+      "Avaliar as detecções e a área monitorada no novo enquadramento",
+      "Apagar todos os exemplos usados no treinamento"
+    ],
+    "correct": 2,
+    "explanation": "Mudar a câmera altera ângulo, distância e o que fica visível. É preciso conferir os resultados e revisar a área de interesse, quando usada."
+  },
+  {
+    "question": "Reconhecer um EPI na imagem garante que ele está sendo usado corretamente?",
+    "options": [
+      "Sim, se a caixa estiver verde",
+      "Sim, se aparecer em várias imagens seguidas",
+      "Sim, porque reconhecer e inspecionar são a mesma coisa",
+      "Não: reconhecer a presença não garante uso correto nem boas condições"
+    ],
+    "correct": 3,
+    "explanation": "Reconhecer um equipamento é diferente de avaliar seu ajuste, estado de conservação e adequação à atividade. A detecção visual do projeto não substitui essas verificações."
+  },
+  {
+    "question": "Qual sequência resume o funcionamento do projeto?",
+    "options": [
+      "Câmera captura → modelo analisa → sistema mostra detecções e possíveis alertas",
+      "Sistema alerta → câmera captura → modelo recebe a imagem",
+      "Modelo analisa → pessoa rotula cada imagem ao vivo → câmera captura",
+      "Câmera captura → sistema garante a segurança → modelo é treinado"
+    ],
+    "correct": 0,
+    "explanation": "A câmera fornece imagens, o modelo procura os padrões aprendidos e o sistema apresenta as detecções. As regras configuradas podem gerar alertas para chamar a atenção de quem acompanha."
+  }
+]
